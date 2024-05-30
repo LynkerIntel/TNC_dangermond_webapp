@@ -89,8 +89,8 @@ layout = html.Div(
             [
                 dbc.Col(
                     [
-                        html.Div(html.H4("Text")),
-                        html.Div(html.P("Text")),
+                        html.Div(html.H4("Dangermond Preserve Template")),
+                        html.Div(html.P("Dashboard / web app")),
                         html.Hr(
                             style={
                                 "borderWidth": "1px",

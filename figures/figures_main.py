@@ -259,6 +259,7 @@ def get_choropleth():
         color_continuous_scale="Viridis",
         range_color=(0, 12),
         scope="usa",
+        center={"lon": -120.3, "lat": 34.6},
         # labels={"unemp": "unemployment rate"},
     )
     # fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
