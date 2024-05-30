@@ -1,0 +1,54 @@
+variable,description,unit
+all.id,numeric id of observation,-
+id,original id of observation from respective datasets,-
+latitude,latitude of observation,deg
+longitude,longitude of observation ,deg
+phase,precipitaion phase of observation as rain or snow or mix,-
+timezone,timezone of observation,-
+timezone_lst,UTC conversion for observation,-
+datetime_utc,UTC time of observation,-
+datetime_lst,local time of observation,-
+elevation.m,elevation of observation derived from USGS 3DEP data,m
+ecoregion3,EPA Level III ecoregion of observation,-
+ecoregion4,EPA Level IV ecoregion of observation,-
+state,US state of observation,-
+plp,GPM IMERG probabilityLiquidPrecipitation value for grid cell containing observation,%
+temp_air_idw_lapse_const,modeled air temperature for observation point using the constant lapse rate (-0.005 K/m),degC
+temp_air_idw_lapse_var,modeled air temperature for observation point using the modeled lapse rate,degC
+temp_air_nearest_site_const,modeled air temperature for nearest station using the constant lapse rate,degC
+temp_air_nearest_site_var,modeled air temperature for nearest station using the modeled lapse rate,degC
+temp_air_avg_obs,average air temperature from stations used in modeling,degC
+temp_air_min_obs,minimum air temperature from stations used in modeling,degC
+temp_air_max_obs,maximum air temperature from stations used in modeling,degC
+temp_air_lapse_var,computed lapse rate,K/m
+temp_air_lapse_var_r2,computed lapse rate R2,-
+temp_air_lapse_var_pval,computed lapse rate p-value,-
+temp_air_n_stations,number of stations used in modeling,-
+temp_air_avg_time_gap,average time gap between data from stations and observation time,seconds
+temp_air_avg_dist,average distance between observation point and air temperature stations used in modeling,m
+temp_air_nearest_id,nearest air temperature station id,-
+temp_air_nearest_elev,elevation at the nearest air temperature station,m
+temp_air_nearest_dist,distance to the nearest air temperature station,m
+temp_air_nearest,air temperature at the nearest station,degC
+temp_dew_idw_lapse_const,modeled dew point temperature for observation point using the constant lapse rate (-0.002 K/m),degC
+temp_dew_idw_lapse_var,modeled dew point temperature for observation point using the modeled lapse rate,degC
+temp_dew_nearest_site_const,modeled dew point temperature for nearest station using the constant lapse rate,degC
+temp_dew_nearest_site_var,modeled dew point temperature for nearest station using the modeled lapse rate,degC
+temp_dew_avg_obs,average dew point temperature from stations used in modeling,degC
+temp_dew_min_obs,minimum dew point temperature from stations used in modeling,degC
+temp_dew_max_obs,maximum dew point temperature from stations used in modeling,degC
+temp_dew_lapse_var,computed lapse rate,K/m
+temp_dew_lapse_var_r2,computed lapse rate R2,-
+temp_dew_lapse_var_pval,computed lapse rate p-value,-
+temp_dew_n_stations,number of stations used in modeling,-
+temp_dew_avg_time_gap,average time gap between data from stations and observation time,seconds
+temp_dew_avg_dist,average distance between observation point and dew point temperature stations used in modeling,m
+temp_dew_nearest_id,nearest dew point temperature station id,-
+temp_dew_nearest_elev,elevation at the nearest dew point temperature station,m
+temp_dew_nearest_dist,distance to the nearest dew point temperature station,m
+temp_dew_nearest,dew point temperature at the nearest station,degC
+rh,modeled relative humidity for observation point,%
+temp_wet,modeled wet bulb temperature for observation point,degC
+hads_counts,counts of HADS meteological stations for observation point,-
+lcd_counts,counts of LCD meteological stations for observation point,-
+wcc_counts,counts of WCC meteological stations for observation point,-
