@@ -1,7 +1,6 @@
-# Mountain Rain or Snow - Dashboard
-A web app for displaying and downloading MROS data. This is the official platform for observers and the public to access and interact with the full dataset. 
+# TNC Dangermond - Dashboard
 
-The web map is updated with new observations daily. The daily snapshot is created by https://github.com/LynkerIntel/rainOrSnowTools, which queries the observer database and processes observations to generate the full suite of associated metadata. The full dataset is serialized as `.parquet` on the `mros` s3 bucket. The web app accesses this `.parquet` on startup. 
+
 
 ## Installation for development
 
@@ -15,9 +14,3 @@ The web map is updated with new observations daily. The daily snapshot is create
 
 # deployment
 TODO: add deployment details
-
-
-
-
-# application
-![example image](./assets/mros-webapp-ex.png)
