@@ -16,8 +16,6 @@ import numpy as np
 
 dash.register_page(__name__)
 
-df = pd.read_csv("./data/mros_met_geog_metadata.csv")
-
 layout = dbc.Col(
     [
         html.Div(
@@ -42,17 +40,17 @@ layout = dbc.Col(
             ],
             # style={"padding": "1rem 1rem 1rem 1rem"},
         ),
-        html.Div(
-            [
-                dbc.Table.from_dataframe(
-                    df,
-                    striped=True,
-                    bordered=True,
-                    hover=True,
-                )
-            ],
-            className="mr-4",
-        ),
+        # html.Div(
+        #     [
+        #         dbc.Table.from_dataframe(
+        #             df,
+        #             striped=True,
+        #             bordered=True,
+        #             hover=True,
+        #         )
+        #     ],
+        #     className="mr-4",
+        # ),
     ],
     class_name="m-4",
 )

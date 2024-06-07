@@ -36,34 +36,16 @@ import logging
 log = logging.getLogger(__name__)
 dash.register_page(__name__, path="/")
 
-MROS_LOGO = "./assets/mros_icon.svg"
+
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
-# this can be moved somewhere more obvious,
-# exists here so the map can be initialized with data
-# TODO: initialize map without data, then immediately update
-# with callback to populate observations. This will remove
-# duplicate loading of .csv and improve load time.
-
-# df_obs = pd.read_csv("data/mros_met_geog_truncated.csv")
-# df_obs.index = pd.to_datetime(df_obs["datetime_utc"])
-# min_df_date = df_obs.index.min().date()
-# max_df_date = df_obs.index.max().date()
-
-df_obs = data_loader.get_daily_data()
-
-min_df_date = df_obs["datetime_utc"].min().date()
-max_df_date = df_obs["datetime_utc"].max().date()
+gdf = data_loader.get_local_hydrofabric()
+dfs = data_loader.get_s3_cabcm()
 
 
-# add basic jitter
-# sigma = 0.003
-# df_obs["latitude"] = df_obs["latitude"].apply(lambda x: np.random.normal(x, sigma))
-# df_obs["longitude"] = df_obs["longitude"].apply(lambda x: np.random.normal(x, sigma))
-# fig = figures_main.generate_map(MAPBOX_API_KEY, df_obs)
-fig = figures_main.get_choropleth()
-
+fig = figures_main.mapbox_lines(gdf)
+wb_fig = figures_main.water_balance_fig(dfs)
 
 # def layout():
 #     """
@@ -88,6 +70,38 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
+                    html.Div(
+                        dcc.Loading(
+                            parent_className="loading_wrapper",
+                            children=[
+                                dcc.Graph(
+                                    figure=fig,
+                                    id="map",
+                                    style={"height": "40vh"},
+                                    # style={"height": "100vh", "width": "100vw"},
+                                    config={"displaylogo": False},
+                                    # className="flex-fill",
+                                ),
+                                dcc.Graph(
+                                    figure=wb_fig,
+                                    id="map",
+                                    # style={"width": "83.1vw", "height": "94vh"},
+                                    # style={"height": "100vh", "width": "100vw"},
+                                    config={"displaylogo": False},
+                                    # className="flex-fill",
+                                ),
+                            ],
+                        ),
+                    ),
+                    # html.Div(id="coords", style={"display": "none"}),
+                    lg=9,
+                    # className="col-9",
+                    style={
+                        "background-color": "white",
+                        "padding": "0 0 0 0",
+                    },
+                ),
+                dbc.Col(
                     [
                         html.Div(html.H4("Dangermond Preserve Template")),
                         html.Div(html.P("Dashboard / web app")),
@@ -99,7 +113,7 @@ layout = html.Div(
                                 "opacity": "unset",
                             }
                         ),
-                        html.Div("Show recent observations:"),
+                        html.Div("Buttons"),
                         html.Div(
                             [
                                 dbc.Button(
@@ -143,8 +157,8 @@ layout = html.Div(
                             end_date_placeholder_text="MMM Do, YY",
                             # start_date=min_df_date, # supplied in callback
                             # end_date=max_df_date, # supplied in callback
-                            min_date_allowed=min_df_date,
-                            max_date_allowed=max_df_date,
+                            # min_date_allowed=min_df_date,
+                            # max_date_allowed=max_df_date,
                             # start_date_id="button-week",
                             # with_portal=True,
                             style={"zIndex": 1001},
@@ -165,12 +179,12 @@ layout = html.Div(
                         # html.Br(),
                         html.Div(
                             [
-                                dbc.Label("Select Precipitation Phase:"),
+                                dbc.Label("Select Button:"),
                                 dbc.Checklist(
                                     options=[
-                                        {"label": "Rain", "value": "Rain"},
-                                        {"label": "Snow", "value": "Snow"},
-                                        {"label": "Mix", "value": "Mix"},
+                                        {"label": "Button", "value": "Rain"},
+                                        {"label": "Button", "value": "Snow"},
+                                        {"label": "Button", "value": "Mix"},
                                     ],
                                     value=["Rain", "Snow", "Mix"],
                                     id="switches-input",
@@ -188,7 +202,7 @@ layout = html.Div(
                             # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
                         ),
                         html.Br(),
-                        dbc.Label("Select Elevation Bounds:"),
+                        dbc.Label("Select Bounds:"),
                         html.Div(
                             [
                                 # html.P("Minimum Elevation"),
@@ -199,7 +213,7 @@ layout = html.Div(
                                     # min=0,
                                     # max=5000,
                                     step=1,
-                                    placeholder="Minimum Elevation",
+                                    placeholder="Minimum",
                                 ),
                             ],
                             # id="min-elev",
@@ -215,7 +229,7 @@ layout = html.Div(
                                     min=0,
                                     max=5000,
                                     step=1,
-                                    placeholder="Maximum Elevation",
+                                    placeholder="Maximum",
                                 ),
                                 dbc.FormText("unit: meters"),
                             ],
@@ -234,7 +248,7 @@ layout = html.Div(
                             [
                                 html.H6(
                                     [
-                                        "Selected obs:",
+                                        "Selections:",
                                         dbc.Badge(
                                             "None",
                                             id="selected-points",
@@ -325,31 +339,31 @@ layout = html.Div(
                     #     # "column-gap": "3px",
                     # },
                 ),
-                dbc.Col(
-                    # html.Div(dcc.Loading(dcc.Graph(id="cu-swe-timeseries"))),
-                    html.Div(
-                        dcc.Loading(
-                            parent_className="loading_wrapper",
-                            children=[
-                                dcc.Graph(
-                                    figure=fig,
-                                    id="map",
-                                    # style={"width": "83.1vw", "height": "94vh"},
-                                    style={"height": "93vh"},
-                                    config={"displaylogo": False},
-                                    # className="flex-fill",
-                                )
-                            ],
-                        ),
-                    ),
-                    # html.Div(id="coords", style={"display": "none"}),
-                    lg=9,
-                    # className="col-9",
-                    style={
-                        "background-color": "white",
-                        "padding": "0 0 0 0",
-                    },
-                ),
+                # dbc.Col(
+                #     # html.Div(dcc.Loading(dcc.Graph(id="cu-swe-timeseries"))),
+                #     html.Div(
+                #         dcc.Loading(
+                #             parent_className="loading_wrapper",
+                #             children=[
+                #                 dcc.Graph(
+                #                     figure=fig,
+                #                     id="map",
+                #                     # style={"width": "83.1vw", "height": "94vh"},
+                #                     style={"height": "93vh"},
+                #                     config={"displaylogo": False},
+                #                     # className="flex-fill",
+                #                 )
+                #             ],
+                #         ),
+                #     ),
+                #     # html.Div(id="coords", style={"display": "none"}),
+                #     lg=9,
+                #     # className="col-9",
+                #     style={
+                #         "background-color": "white",
+                #         "padding": "0 0 0 0",
+                #     },
+                # ),
             ]
         )
     ]

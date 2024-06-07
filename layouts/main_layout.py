@@ -11,7 +11,7 @@ import numpy as np
 
 # This is the NavBar, shown on all pages.
 
-MROS_LOGO = "./assets/mros_icon.svg"
+LYNKER_LOGO = "./assets/lynker-logo-white.png"
 pages = dash.page_registry.values()
 print(pages)
 
@@ -26,47 +26,32 @@ main_layout = html.Div(
                                 # Use row and col to control vertical alignment of logo / brand
                                 dbc.Row(
                                     [
-                                        # dbc.Col(
-                                        #     html.Img(src=MROS_LOGO, height="37px"),
-                                        # ),
-                                        # dbc.Col(
-                                        #     html.Div(
-                                        #         [
-                                        #             dbc.NavItem(
-                                        #                 [
-                                        #                     dbc.NavLink(
-                                        #                         "About", href="about"
-                                        #                     ),
-                                        #                 ],
-                                        #                 style={
-                                        #                     "padding": "0 1rem 0 1rem"
-                                        #                 },
-                                        #             ),
-                                        #         ],
-                                        #     ),
-                                        # ),
+                                        dbc.Col(
+                                            html.Img(
+                                                src=LYNKER_LOGO,
+                                                height="37px",
+                                                # style={
+                                                #     "padding": "0 0 0 0",
+                                                #     "margin": "0 0 0 0",
+                                                # },
+                                            ),
+                                            # class_name="mr-0 ml-0 mt-0, mb-0",
+                                        ),
                                         dbc.Col(
                                             dbc.Nav(
                                                 [
-                                                    dbc.NavItem(
-                                                        dbc.NavLink(
-                                                            "About Us",
-                                                            # active=True,
-                                                            href="about",
-                                                        ),
-                                                        class_name="mr-4 ml-3",
-                                                    ),
-                                                    dbc.NavItem(
-                                                        dbc.NavLink(
-                                                            "User Guide",
-                                                            href="obs",
-                                                        )
-                                                    ),
                                                     # dbc.NavItem(
                                                     #     dbc.NavLink(
-                                                    #         "Another link", href="#"
-                                                    #     )
+                                                    #         "About",
+                                                    #         # active=True,
+                                                    #         href="about",
+                                                    #     ),
                                                     # ),
+                                                    # dbc.NavItem(
+                                                    #     dbc.NavLink(
+                                                    #         "User Guide",
+                                                    #         href="obs",
+                                                    #     )
                                                 ]
                                             ),
                                         ),

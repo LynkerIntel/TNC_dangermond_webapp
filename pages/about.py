@@ -16,7 +16,6 @@ import numpy as np
 
 dash.register_page(__name__)
 
-df = pd.read_csv("./data/mros_met_geog_metadata.csv")
 
 layout = html.Div(
     [
