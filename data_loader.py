@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 import boto3
 import io
+import geopandas as gpd
+
+
+# initialize boto3 S3 client
+s3 = boto3.client("s3")
 
 
 # Read single parquet file from S3
@@ -21,7 +26,7 @@ def pd_read_s3_csv(key, bucket, s3_client=None, **args):
     return pd.read_csv(io.BytesIO(obj["Body"].read()), **args)
 
 
-def read_s3_gpd(s3_client, bucket, key, driver="GPKG"):
+def gpd_read_s3_gpk(s3_client, key, bucket, driver="GPKG", **args):
     """
     read geopandas dataframe from s3 bucket
     """
@@ -31,14 +36,7 @@ def read_s3_gpd(s3_client, bucket, key, driver="GPKG"):
     data = response["Body"].read()
 
     with io.BytesIO(data) as src:
-        gdf = gpd.read_file(src, driver=driver)
-
-    if key == Config.HUC10_PATH or Config.BOI:
-        gdf.geometry = gdf.geometry.simplify(0.001)
-
-    else:
-        gdf.index = gdf["index"]  # replace int index (TODO: upload correct df to s3)
-        gdf.drop(columns="index", inplace=True)
+        gdf = gpd.read_file(src, driver=driver, **args)
 
     return gdf
 
@@ -46,18 +44,31 @@ def read_s3_gpd(s3_client, bucket, key, driver="GPKG"):
 def get_s3_cabcm():
     """
     load California Basin Characterization Model summarization from s3
+
+    :returns (dict): dict of pd.dataframe for each var
     """
-    df = pd_read_s3_parquet(
-        key="water_balance/cabcm/tmx.parquet",
-        bucket="tnc-dangermond",
-    )
-    return df
+    vars = ["aet", "cwd", "pck", "pet", "rch", "run", "str", "tmn", "tmx"]
+    all_vars = {}
+
+    for var in vars:
+        df = pd_read_s3_parquet(
+            key=f"water_balance/cabcm/{var}.parquet",
+            bucket="tnc-dangermond",
+        )
+        all_vars[var] = df
+
+    return all_vars
 
 
 def get_s3_hydrofabric():
     """
     get Dangermond hydrofabric
     """
+    df = gpd_read_s3_gpk(
+        bucket="tnc-dangermond", key="refactor_hydrofabric.gpkg", s3_client=s3
+    )
+    # gdf["comid"] = gdf["comid"].astype(int)
+    return df
 
 
 # def get_daily_data():
