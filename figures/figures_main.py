@@ -44,7 +44,9 @@ import data_loader
 
 
 def mapbox_lines(gdf):
-    """ """
+    """
+    Primary map with flowpaths within Dangermond Preserve.
+    """
     lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf)
     fig = px.line_mapbox(
         lat=lats, lon=lons, hover_name=names, mapbox_style="carto-positron"
@@ -61,8 +63,16 @@ def mapbox_lines(gdf):
 
 
 def water_balance_fig(dfs):
-    """ """
-    fig = px.line(dfs["run"]["fp_1"])
+    """
+    Define time series figure locations on map.
+    """
+    # subset of full vars
+    model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
+
+    df_all = pd.concat([dfs[i]["fp_1"] for i in model_vars], axis=1)
+    df_all.columns = model_vars
+
+    fig = px.line(df_all)
     fig.update_layout(
         # width=100vh,
         # height=100vw,

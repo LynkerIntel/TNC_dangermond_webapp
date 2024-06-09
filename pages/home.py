@@ -44,8 +44,8 @@ gdf = data_loader.get_local_hydrofabric()
 dfs = data_loader.get_s3_cabcm()
 
 
-fig = figures_main.mapbox_lines(gdf)
-wb_fig = figures_main.water_balance_fig(dfs)
+map_fig = figures_main.mapbox_lines(gdf)
+wb_ts_fig = figures_main.water_balance_fig(dfs)
 
 # def layout():
 #     """
@@ -75,7 +75,7 @@ layout = html.Div(
                             parent_className="loading_wrapper",
                             children=[
                                 dcc.Graph(
-                                    figure=fig,
+                                    figure=map_fig,
                                     id="map",
                                     style={"height": "40vh"},
                                     # style={"height": "100vh", "width": "100vw"},
@@ -83,8 +83,8 @@ layout = html.Div(
                                     # className="flex-fill",
                                 ),
                                 dcc.Graph(
-                                    figure=wb_fig,
-                                    id="map",
+                                    figure=wb_ts_fig,
+                                    id="wb_ts",
                                     # style={"width": "83.1vw", "height": "94vh"},
                                     # style={"height": "100vh", "width": "100vw"},
                                     config={"displaylogo": False},
@@ -105,6 +105,7 @@ layout = html.Div(
                     [
                         html.Div(html.H4("Dangermond Preserve Template")),
                         html.Div(html.P("Dashboard / web app")),
+                        html.Div(id="contents"),
                         html.Hr(
                             style={
                                 "borderWidth": "1px",
@@ -371,6 +372,30 @@ layout = html.Div(
 
 
 # # Callbacks ----------------
+
+
+@callback(Output("contents", "children"), Input("map", "clickData"))
+def update_contents(clickData):
+    """
+    get click data from primary map, add to layout.
+    """
+    if clickData:
+        print("clicked")
+        print(clickData)
+        fips = clickData["points"][0]["hovertext"]
+        # dff = df[df["centroid_lat"] == fips]
+        return html.Div(
+            [
+                # dash_table.DataTable(
+                #     id="table",
+                #     columns=[{"name": i, "id": i} for i in dff.columns],
+                #     data=dff.to_dict(orient="records"),
+                # )
+                fips
+            ]
+        )
+
+
 # @callback(
 #     Output("map", "figure"),
 #     Input("date-picker-range", "start_date"),
