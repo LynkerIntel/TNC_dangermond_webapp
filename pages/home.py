@@ -28,6 +28,7 @@ import os
 import boto3
 import io
 
+import plotly.graph_objects as go
 
 from figures import figures_main
 import data_loader
@@ -45,7 +46,8 @@ dfs = data_loader.get_s3_cabcm()
 
 
 map_fig = figures_main.mapbox_lines(gdf)
-wb_ts_fig = figures_main.water_balance_fig(dfs)
+# wb_ts_fig = figures_main.water_balance_fig(dfs)
+
 
 # def layout():
 #     """
@@ -83,8 +85,8 @@ layout = html.Div(
                                     # className="flex-fill",
                                 ),
                                 dcc.Graph(
-                                    figure=wb_ts_fig,
-                                    id="wb_ts",
+                                    # figure=wb_ts_fig,
+                                    id="wb_ts_fig",
                                     # style={"width": "83.1vw", "height": "94vh"},
                                     # style={"height": "100vh", "width": "100vw"},
                                     config={"displaylogo": False},
@@ -382,18 +384,111 @@ def update_contents(clickData):
     if clickData:
         print("clicked")
         print(clickData)
-        fips = clickData["points"][0]["hovertext"]
+        fp = clickData["points"][0]["hovertext"]
         # dff = df[df["centroid_lat"] == fips]
-        return html.Div(
-            [
-                # dash_table.DataTable(
-                #     id="table",
-                #     columns=[{"name": i, "id": i} for i in dff.columns],
-                #     data=dff.to_dict(orient="records"),
-                # )
-                fips
-            ]
-        )
+    else:
+        fp = 1
+
+    return html.Div(
+        [
+            # dash_table.DataTable(
+            #     id="table",
+            #     columns=[{"name": i, "id": i} for i in dff.columns],
+            #     data=dff.to_dict(orient="records"),
+            # )
+            fp
+        ]
+    )
+
+
+@callback(
+    Output("wb_ts_fig", "figure"),
+    Input("map", "clickData"),
+)
+def water_balance_figure(fp_click):
+    """
+    Define time series figure locations on map.
+    """
+    if fp_click is None:
+        fp = 1
+    else:
+        fp = fp_click["points"][0]["hovertext"]
+
+    idx = f"fp_{fp}"  # translate number to column
+    print(f"{idx=}")
+    # subset of full vars
+    model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
+    df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
+    df_all.columns = model_vars
+
+    fig = px.line(df_all)
+    fig.update_layout(
+        # width=100vh,
+        # height=100vw,
+        autosize=True,
+        margin=dict(l=10, r=10, t=10, b=0),
+        # uirevision="Don't change",
+        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+    )
+
+    fig.update_layout(plot_bgcolor="white")
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+
+    print(fig["data"])
+    return fig
+
+
+@callback(
+    Output("map", "figure"),
+    Input("map", "clickData"),
+    prevent_initial_call=True,
+)
+def higlight_line_segment_on_map(fp_click):
+    """
+    Highlight line segment to make user selection more obvious.
+    """
+    print("highlight callback fired")
+
+    if fp_click is None:
+        fp = 1
+    else:
+        fp = fp_click["points"][0]["hovertext"]
+
+    # country_count = list(df[df.country.isin(countries)].index)
+    patched_figure = Patch()
+    # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
+    # patched_figure["data"][0]["line"]["color"] = updated_markers
+
+    subset = gdf[gdf["ID"] == 18]
+    x = list(subset.iloc[0].geometry.coords.xy[0])
+    y = list(subset.iloc[0].geometry.coords.xy[1])
+
+    # fig.add_trace(go.Scattermapbox(mode='lines',
+    #                             lon=x,
+    #                             lat=y,
+    #                             line_color='green',
+    #                             line_width = 5,
+    #                             name="test"
+    #                             ))
+
+    # patched_figure["data"].append(
+    #     go.Scattermapbox(
+    #         mode="lines", lon=x, lat=y, line_color="green", line_width=5, name="test"
+    #     )
+    # )
+
+    patched_figure["data"][1] = go.Scattermapbox(
+        mode="lines", lon=x, lat=y, line_color="green", line_width=5, name="test"
+    )
+
+    return patched_figure
+
+
+# @callback(Output("map", "figure"), Input("update_contents", "value"))
+# def update_waterbalance_timeseries(click_data):
+#     """ """
+#     print("updating fig")
 
 
 # @callback(

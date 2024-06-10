@@ -5,6 +5,7 @@ from urllib.request import urlopen
 import json
 import data_loader
 
+
 # def get_choropleth():
 #     """ """
 #     with urlopen(
@@ -62,26 +63,26 @@ def mapbox_lines(gdf):
     return fig
 
 
-def water_balance_fig(dfs):
-    """
-    Define time series figure locations on map.
-    """
-    # subset of full vars
-    model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
+# def water_balance_fig(dfs):
+#     """
+#     Define time series figure locations on map.
+#     """
+#     # subset of full vars
+#     model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
 
-    df_all = pd.concat([dfs[i]["fp_1"] for i in model_vars], axis=1)
-    df_all.columns = model_vars
+#     df_all = pd.concat([dfs[i]["fp_1"] for i in model_vars], axis=1)
+#     df_all.columns = model_vars
 
-    fig = px.line(df_all)
-    fig.update_layout(
-        # width=100vh,
-        # height=100vw,
-        autosize=True,
-        margin=dict(l=10, r=10, t=10, b=0),
-        # uirevision="Don't change",
-        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-    )
-    fig.update_layout(plot_bgcolor="white")
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-    return fig
+#     fig = px.line(df_all)
+#     fig.update_layout(
+#         # width=100vh,
+#         # height=100vw,
+#         autosize=True,
+#         margin=dict(l=10, r=10, t=10, b=0),
+#         # uirevision="Don't change",
+#         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+#     )
+#     fig.update_layout(plot_bgcolor="white")
+#     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+#     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+#     return fig
