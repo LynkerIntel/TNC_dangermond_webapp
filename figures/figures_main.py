@@ -6,51 +6,13 @@ import json
 import data_loader
 
 
-# def get_choropleth():
-#     """ """
-#     with urlopen(
-#         "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
-#     ) as response:
-#         counties = json.load(response)
-
-#     df = pd.read_csv(
-#         "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv",
-#         dtype={"fips": str},
-#     )
-
-#     import plotly.express as px
-
-#     fig = px.choropleth(
-#         df,
-#         geojson=counties,
-#         locations="fips",
-#         color="unemp",
-#         color_continuous_scale="Viridis",
-#         range_color=(0, 12),
-#         scope="usa",
-#         center={"lon": -120.3, "lat": 34.6},
-#         # labels={"unemp": "unemployment rate"},
-#     )
-#     # fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-#     fig.update_layout(
-#         # width=100vh,
-#         # height=100vw,
-#         autosize=True,
-#         margin=dict(l=0, r=0, t=0, b=0),
-#         # uirevision="Don't change",
-#         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-#     )
-#     fig.update_traces(showlegend=False)
-#     return fig
-
-
 def mapbox_lines(gdf):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf)
     fig = px.line_mapbox(
-        lat=lats, lon=lons, hover_name=names, mapbox_style="carto-positron"
+        lat=lats, lon=lons, hover_name=names, mapbox_style="carto-positron", zoom=10
     )
     fig.update_layout(
         # width=100vh,
