@@ -421,12 +421,12 @@ def water_balance_figure(fp_click):
     df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
     df_all.columns = model_vars
 
-    fig = px.line(df_all)
+    fig = px.line(df_all, title=idx)
     fig.update_layout(
         # width=100vh,
         # height=100vw,
         autosize=True,
-        margin=dict(l=10, r=10, t=10, b=0),
+        margin=dict(l=20, r=10, t=45, b=0),
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
@@ -460,7 +460,7 @@ def higlight_line_segment_on_map(fp_click):
     # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
     # patched_figure["data"][0]["line"]["color"] = updated_markers
 
-    subset = gdf[gdf["ID"] == 18]
+    subset = gdf[gdf["ID"] == fp]
     x = list(subset.iloc[0].geometry.coords.xy[0])
     y = list(subset.iloc[0].geometry.coords.xy[1])
 
