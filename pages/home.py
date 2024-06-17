@@ -42,10 +42,11 @@ MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
 gdf = data_loader.get_local_hydrofabric()
+gdf_outline = data_loader.get_outline()
 dfs = data_loader.get_s3_cabcm()
 
 
-map_fig = figures_main.mapbox_lines(gdf)
+map_fig = figures_main.mapbox_lines(gdf, gdf_outline)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 
 
@@ -76,298 +77,222 @@ layout = html.Div(
                         dcc.Loading(
                             parent_className="loading_wrapper",
                             children=[
-                                dcc.Graph(
-                                    figure=map_fig,
-                                    id="map",
-                                    style={"height": "40vh"},
-                                    # style={"height": "100vh", "width": "100vw"},
-                                    config={"displaylogo": False},
-                                    # className="flex-fill",
+                                html.Div(html.H4("Dangermond Preserve Template")),
+                                html.Div(html.P("Dashboard / web app")),
+                                html.Hr(
+                                    style={
+                                        "borderWidth": "1px",
+                                        "width": "100%",
+                                        # "borderColor": "#AB87FF",
+                                        "opacity": "unset",
+                                    }
                                 ),
-                                dcc.Graph(
-                                    # figure=wb_ts_fig,
-                                    id="wb_ts_fig",
-                                    # style={"width": "83.1vw", "height": "94vh"},
-                                    # style={"height": "100vh", "width": "100vw"},
-                                    config={"displaylogo": False},
-                                    # className="flex-fill",
-                                ),
+                                html.Div(id="contents"),
+                                # html.Div("Buttons"),
+                                # html.Div(
+                                #     [
+                                #         dbc.Button(
+                                #             "1 Day",
+                                #             outline=True,
+                                #             color="secondary",
+                                #             className="me-1 mb-1",
+                                #             id="day-button",
+                                #         ),
+                                #         dbc.Button(
+                                #             "1 Week",
+                                #             outline=True,
+                                #             color="secondary",
+                                #             className="me-1 mb-1",
+                                #             id="week-button",
+                                #         ),
+                                #         dbc.Button(
+                                #             "1 Month",
+                                #             outline=True,
+                                #             color="secondary",
+                                #             className="me-1 mb-1",
+                                #             id="month-button",
+                                #         ),
+                                #         dbc.Button(
+                                #             "1 Year",
+                                #             outline=True,
+                                #             # active = True,
+                                #             color="secondary",
+                                #             className="me-1 mb-1",
+                                #             id="year-button",
+                                #         ),
+                                #     ],
+                                #     className="d-md-flex mt-1",
+                                # ),
+                                # html.Div("Or custom range:"),
+                                # dcc.DatePickerRange(
+                                #     display_format="YYYY/MM/DD",
+                                #     id="date-picker-range",
+                                #     number_of_months_shown=1,
+                                #     month_format="MMM YYYY",
+                                #     end_date_placeholder_text="MMM Do, YY",
+                                #     style={"zIndex": 1001},
+                                #     className="dash-bootstrap",
+                                # ),
+                                # dbc.FormText("(YYYY/MM/DD)"),
+                                # html.Br(),
+                                # # html.Br(),
+                                # html.Div(
+                                #     [
+                                #         dbc.Label("Select Button:"),
+                                #         dbc.Checklist(
+                                #             options=[
+                                #                 {
+                                #                     "label": "Button",
+                                #                     "value": "Rain",
+                                #                 },
+                                #                 {
+                                #                     "label": "Button",
+                                #                     "value": "Snow",
+                                #                 },
+                                #                 {"label": "Button", "value": "Mix"},
+                                #             ],
+                                #             value=["Rain", "Snow", "Mix"],
+                                #             id="switches-input",
+                                #             switch=True,
+                                #             style={
+                                #                 "padding": "0rem 0rem 0rem 1.5rem",
+                                #                 # "color": "pink",
+                                #             },
+                                #             # input_style={"color": "pink"},
+                                #             # input_class_name="custom-checkbox custom-control-input",
+                                #             # label_checked_class_name="custom-control-label",
+                                #         ),
+                                #     ],
+                                #     # className="custom-control custom-switch",
+                                #     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
+                                # ),
+                                # html.Br(),
+                                # dbc.Label("Select Bounds:"),
+                                # html.Div(
+                                #     [
+                                #         # html.P("Minimum Elevation"),
+                                #         dbc.Input(
+                                #             id="input-elev-min",
+                                #             # debounce=True,
+                                #             type="number",
+                                #             # min=0,
+                                #             # max=5000,
+                                #             step=1,
+                                #             placeholder="Minimum",
+                                #         ),
+                                #     ],
+                                #     # id="min-elev",
+                                #     className="mb-2",
+                                # ),
+                                # html.Div(
+                                #     [
+                                #         # html.P("Maximum Elevation"),
+                                #         dbc.Input(
+                                #             # debounce=True,
+                                #             id="input-elev-max",
+                                #             type="number",
+                                #             min=0,
+                                #             max=5000,
+                                #             step=1,
+                                #             placeholder="Maximum",
+                                #         ),
+                                #         dbc.FormText("unit: meters"),
+                                #     ],
+                                #     # id="max-elev",
+                                # ),
+                                # html.Br(),
+                                # html.Hr(
+                                #     style={
+                                #         "borderWidth": "1px",
+                                #         "width": "100%",
+                                #         # "borderColor": "#AB87FF",
+                                #         "opacity": "unset",
+                                #     }
+                                # ),
+                                # dbc.Row(
+                                #     [
+                                #         html.H6(
+                                #             [
+                                #                 "Selections:",
+                                #                 dbc.Badge(
+                                #                     "None",
+                                #                     id="selected-points",
+                                #                     className="ms-1",
+                                #                 ),
+                                #                 dbc.Tooltip(
+                                #                     "Use the selection tools (Lasso or Box) in the upper right corner to select observations. \
+                                #                 To remove selection: double click outside of the selection area",
+                                #                     target="selected-points",
+                                #                 ),
+                                #             ]
+                                #         ),
+                                #     ]
+                                # ),
+                                # html.Div(
+                                #     [
+                                #         dbc.Button(
+                                #             "Download Data",
+                                #             color="primary",
+                                #             disabled=True,
+                                #             id="download-data-button",
+                                #         ),
+                                #         dcc.Download(id="download-dataframe-csv"),
+                                #     ],
+                                #     className="d-grid gap-2",
+                                #     style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                # ),
+                                # html.Br(),
+                                # html.Div(id="click-modal"),
+                                # dcc.Graph(
+                                #     figure=map_fig,
+                                #     id="map",
+                                #     style={"height": "40vh"},
+                                #     # style={"height": "100vh", "width": "100vw"},
+                                #     config={"displaylogo": False},
+                                #     # className="flex-fill",
+                                # ),
+                                # dcc.Graph(
+                                #     # figure=wb_ts_fig,
+                                #     id="wb_ts_fig",
+                                #     # style={"width": "83.1vw", "height": "94vh"},
+                                #     # style={"height": "100vh", "width": "100vw"},
+                                #     config={"displaylogo": False},
+                                #     # className="flex-fill",
+                                # ),
                             ],
                         ),
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
-                    lg=9,
+                    lg=2,
                     # className="col-9",
                     style={
                         "background-color": "white",
-                        "padding": "0 0 0 0",
+                        "padding": "0 10 0 0",
                     },
                 ),
                 dbc.Col(
-                    [
-                        html.Div(html.H4("Dangermond Preserve Template")),
-                        html.Div(html.P("Dashboard / web app")),
-                        html.Div(id="contents"),
-                        html.Hr(
-                            style={
-                                "borderWidth": "1px",
-                                "width": "100%",
-                                # "borderColor": "#AB87FF",
-                                "opacity": "unset",
-                            }
-                        ),
-                        html.Div("Buttons"),
-                        html.Div(
-                            [
-                                dbc.Button(
-                                    "1 Day",
-                                    outline=True,
-                                    color="secondary",
-                                    className="me-1 mb-1",
-                                    id="day-button",
-                                ),
-                                dbc.Button(
-                                    "1 Week",
-                                    outline=True,
-                                    color="secondary",
-                                    className="me-1 mb-1",
-                                    id="week-button",
-                                ),
-                                dbc.Button(
-                                    "1 Month",
-                                    outline=True,
-                                    color="secondary",
-                                    className="me-1 mb-1",
-                                    id="month-button",
-                                ),
-                                dbc.Button(
-                                    "1 Year",
-                                    outline=True,
-                                    # active = True,
-                                    color="secondary",
-                                    className="me-1 mb-1",
-                                    id="year-button",
-                                ),
-                            ],
-                            className="d-md-flex mt-1",
-                        ),
-                        html.Div("Or custom range:"),
-                        dcc.DatePickerRange(
-                            display_format="YYYY/MM/DD",
-                            id="date-picker-range",
-                            number_of_months_shown=1,
-                            month_format="MMM YYYY",
-                            end_date_placeholder_text="MMM Do, YY",
-                            # start_date=min_df_date, # supplied in callback
-                            # end_date=max_df_date, # supplied in callback
-                            # min_date_allowed=min_df_date,
-                            # max_date_allowed=max_df_date,
-                            # start_date_id="button-week",
-                            # with_portal=True,
-                            style={"zIndex": 1001},
-                            className="dash-bootstrap",
-                        ),
-                        dbc.FormText("(YYYY/MM/DD)"),
-                        # html.Div(
-                        #     [
-                        #         dbc.Button(
-                        #             "All Dates",
-                        #             outline=True,
-                        #             color="primary",
-                        #             className="me-1",
-                        #         ),
-                        #     ]
-                        # ),
-                        html.Br(),
-                        # html.Br(),
-                        html.Div(
-                            [
-                                dbc.Label("Select Button:"),
-                                dbc.Checklist(
-                                    options=[
-                                        {"label": "Button", "value": "Rain"},
-                                        {"label": "Button", "value": "Snow"},
-                                        {"label": "Button", "value": "Mix"},
-                                    ],
-                                    value=["Rain", "Snow", "Mix"],
-                                    id="switches-input",
-                                    switch=True,
-                                    style={
-                                        "padding": "0rem 0rem 0rem 1.5rem",
-                                        # "color": "pink",
-                                    },
-                                    # input_style={"color": "pink"},
-                                    # input_class_name="custom-checkbox custom-control-input",
-                                    # label_checked_class_name="custom-control-label",
-                                ),
-                            ],
-                            # className="custom-control custom-switch",
-                            # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
-                        ),
-                        html.Br(),
-                        dbc.Label("Select Bounds:"),
-                        html.Div(
-                            [
-                                # html.P("Minimum Elevation"),
-                                dbc.Input(
-                                    id="input-elev-min",
-                                    # debounce=True,
-                                    type="number",
-                                    # min=0,
-                                    # max=5000,
-                                    step=1,
-                                    placeholder="Minimum",
-                                ),
-                            ],
-                            # id="min-elev",
-                            className="mb-2",
-                        ),
-                        html.Div(
-                            [
-                                # html.P("Maximum Elevation"),
-                                dbc.Input(
-                                    # debounce=True,
-                                    id="input-elev-max",
-                                    type="number",
-                                    min=0,
-                                    max=5000,
-                                    step=1,
-                                    placeholder="Maximum",
-                                ),
-                                dbc.FormText("unit: meters"),
-                            ],
-                            # id="max-elev",
-                        ),
-                        html.Br(),
-                        html.Hr(
-                            style={
-                                "borderWidth": "1px",
-                                "width": "100%",
-                                # "borderColor": "#AB87FF",
-                                "opacity": "unset",
-                            }
-                        ),
-                        dbc.Row(
-                            [
-                                html.H6(
-                                    [
-                                        "Selections:",
-                                        dbc.Badge(
-                                            "None",
-                                            id="selected-points",
-                                            className="ms-1",
-                                        ),
-                                        # html.Span(
-                                        #     "?",
-                                        #     id="tooltip-target",
-                                        #     style={
-                                        #         "textAlign": "center",
-                                        #         "color": "white",
-                                        #         "padding-top": "2.5px",
-                                        #     },
-                                        #     className="dot float-right",
-                                        # ),
-                                        dbc.Tooltip(
-                                            "Use the selection tools (Lasso or Box) in the upper right corner to select observations. \
-                                                To remove selection: double click outside of the selection area",
-                                            target="selected-points",
-                                        ),
-                                    ]
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                dbc.Button(
-                                    "Download Data",
-                                    color="primary",
-                                    disabled=True,
-                                    id="download-data-button",
-                                ),
-                                dcc.Download(id="download-dataframe-csv"),
-                            ],
-                            className="d-grid gap-2",
-                            style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
-                        ),
-                        html.Br(),
-                        html.Div(id="click-modal"),
-                        # dash_table.DataTable(df_obs.iloc[0].to_dict()),
-                        # html.Div(
-                        #     dbc.Table.from_dataframe(
-                        #         df_obs.iloc[:1].melt(),
-                        #         striped=True,
-                        #         bordered=True,
-                        #         hover=True,
-                        #     ),
-                        #     style={"maxHeight": "400px", "overflow": "scroll"},
-                        # ),
-                        # html.Div(
-                        #     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/datepicker.min.js"></script>
-                        # ),
-                        # html.Div(
-                        #     [
-                        #         # "DEVELOPMENT FEATURE TESTING",
-                        #         dbc.Label("Toggle a bunch"),
-                        #         dbc.Checklist(
-                        #             options=[
-                        #                 {"label": "Option 1", "value": 1},
-                        #                 {"label": "Option 2", "value": 2},
-                        #                 {
-                        #                     "label": "Disabled Option",
-                        #                     "value": 3,
-                        #                     "disabled": True,
-                        #                 },
-                        #             ],
-                        #             value=[1],
-                        #             # id="switches-input",
-                        #             switch=True,
-                        #         ),
-                        #     ],
-                        #     className="border rounded",
-                        # ),
-                    ],
-                    # lg=3,
-                    className="pt-2",
-                    # width=2,
-                    # className="mr-1 ml-2 mt-2",
-                    # className="mr-1 ml-2 mt-2",
-                    # style={
-                    #     # "position": "fixed",
-                    #     # "display": "inline-block",
-                    #     # "height": "100%",
-                    #     # "background-color": "white",
-                    #     # "padding": "1rem 0rem 0rem 1.5rem",
-                    #     "overflow-y": "auto",
-                    #     # "height": "800px",
-                    #     # "column-gap": "3px",
-                    # },
+                    html.Div(
+                        [
+                            dcc.Graph(
+                                figure=map_fig,
+                                id="map",
+                                style={"height": "40vh"},
+                                # style={"height": "100vh", "width": "100vw"},
+                                config={"displaylogo": False},
+                                # className="flex-fill",
+                            ),
+                            dcc.Graph(
+                                # figure=wb_ts_fig,
+                                id="wb_ts_fig",
+                                # style={"width": "83.1vw", "height": "94vh"},
+                                # style={"height": "100vh", "width": "100vw"},
+                                config={"displaylogo": False},
+                                # className="flex-fill",
+                            ),
+                        ]
+                    )
                 ),
-                # dbc.Col(
-                #     # html.Div(dcc.Loading(dcc.Graph(id="cu-swe-timeseries"))),
-                #     html.Div(
-                #         dcc.Loading(
-                #             parent_className="loading_wrapper",
-                #             children=[
-                #                 dcc.Graph(
-                #                     figure=fig,
-                #                     id="map",
-                #                     # style={"width": "83.1vw", "height": "94vh"},
-                #                     style={"height": "93vh"},
-                #                     config={"displaylogo": False},
-                #                     # className="flex-fill",
-                #                 )
-                #             ],
-                #         ),
-                #     ),
-                #     # html.Div(id="coords", style={"display": "none"}),
-                #     lg=9,
-                #     # className="col-9",
-                #     style={
-                #         "background-color": "white",
-                #         "padding": "0 0 0 0",
-                #     },
-                # ),
-            ]
+            ],
         )
     ]
 )
@@ -464,21 +389,8 @@ def higlight_line_segment_on_map(fp_click):
     x = list(subset.iloc[0].geometry.coords.xy[0])
     y = list(subset.iloc[0].geometry.coords.xy[1])
 
-    # fig.add_trace(go.Scattermapbox(mode='lines',
-    #                             lon=x,
-    #                             lat=y,
-    #                             line_color='green',
-    #                             line_width = 5,
-    #                             name="test"
-    #                             ))
-
-    # patched_figure["data"].append(
-    #     go.Scattermapbox(
-    #         mode="lines", lon=x, lat=y, line_color="green", line_width=5, name="test"
-    #     )
-    # )
-
-    patched_figure["data"][1] = go.Scattermapbox(
+    # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
+    patched_figure["data"][2] = go.Scattermapbox(
         mode="lines", lon=x, lat=y, line_color="green", line_width=5, name="test"
     )
 
