@@ -1,63 +1,46 @@
-name: mros_env
-
+name: tnc_web_env
 channels:
-    - conda-forge
-    - defaults
-
+  - conda-forge
+  - defaults
 dependencies:
-    - python=3.9
-    - conda-forge::gdal
-    #- conda-forge::ulmo
-    #- datashader
-    #- pyviz::holoviews
-    - conda-forge::cartopy
-    - conda-forge::dash
-    - conda-forge::xarray
-    - conda-forge::dask
-    - conda-forge::rioxarray
-    - conda-forge::dash-bootstrap-components
-    - conda-forge::pip
-    - conda-forge::zeep
-    - conda-forge::nbformat
-    #- h5py
-    #- h5netcdf
-    - appdirs
-    - beautifulsoup4
-    - future
-    - geojson
-    - geopandas
-    - isodate
-    - ipykernel
-    #- jupyterlab
-    - lxml
-    - matplotlib
-    - numpy=1.23.5
-    - pandas
-    - plotly
-    - pyarrow
-#    - pytables
-    - requests
-    - conda-forge::shapely
-    - conda-forge::boto3
-    - conda-forge::python-dotenv
-    - suds-jurko
-
-    # Specifically for building Sphinx docs
-    - python-dateutil
-    - numpydoc
-    - sphinx
-
-    - pip:
-        - cdsspy
-        - dash-ag-grid
-        - dash-mantine-components
-
-    - coveralls
-    - freezegun
-    - html5lib
-    - mock
-    - pytest
-    - pytest-cov
-    - pytest-runner
-    - httpretty
-    
+  - numpy=1.23.5
+  - conda-forge::xarray
+  - freezegun
+  - conda-forge::python-dotenv
+  - pandas
+  - suds-jurko
+  - conda-forge::shapely
+  - appdirs
+  - numpydoc
+  - geojson
+  - conda-forge::boto3
+  - httpretty
+  - matplotlib
+  - pytest-runner
+  - python-dateutil
+  - sphinx
+  - plotly
+  - beautifulsoup4
+  - isodate
+  - conda-forge::dash-bootstrap-components
+  - conda-forge::dash
+  - conda-forge::gdal
+  - pyarrow
+  - conda-forge::dask
+  - python=3.9
+  - geopandas
+  - pytest-cov
+  - mock
+  - html5lib
+  - conda-forge::pip
+  - conda-forge::rioxarray
+  - conda-forge::cartopy
+  - pytest
+  - requests
+  - lxml
+  - ipykernel
+  - conda-forge::zeep
+  - coveralls
+  - conda-forge::nbformat
+  - future
+prefix: /Users/dillonragar/miniconda3/envs/tnc_web_env
