@@ -1,6 +1,12 @@
 version: '2.4'
 services:
-  mroswebapp:
+  tncwebapp:
+    env_file: ".env"
     build: .
     ports:
       - "10000:10000"
+    # environment:
+    #   test_key: "${test_key_env}" 
+    #   MAPBOX_API_KEY: ${MAPBOX_API_KEY}
+    #   aws_access_key_id: ${aws_access_key_id}
+    #   aws_secret_access_key: ${aws_secret_access_key}

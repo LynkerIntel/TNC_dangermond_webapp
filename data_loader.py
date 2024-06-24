@@ -4,10 +4,20 @@ import boto3
 import io
 import geopandas as gpd
 import shapely.geometry
+import os
 
 
 # initialize boto3 S3 client
-s3 = boto3.client("s3")
+# s3 = boto3.client("s3")
+
+print("test key:")
+
+# note, boto3 will ignore this if local aws credentials exist
+s3 = boto3.resource(
+    "s3",
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+)
 
 
 # Read single parquet file from S3
@@ -15,7 +25,7 @@ def pd_read_s3_parquet(key, bucket, s3_client=None, **args):
     """ """
     if s3_client is None:
         s3_client = boto3.client("s3")
-    obj = s3_client.get_object(Bucket=bucket, Key=key)
+    obj = s3_client.meta.client.get_object(Bucket=bucket, Key=key)
     return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
 
 
@@ -23,7 +33,7 @@ def pd_read_s3_csv(key, bucket, s3_client=None, **args):
     """ """
     if s3_client is None:
         s3_client = boto3.client("s3")
-    obj = s3_client.get_object(Bucket=bucket, Key=key)
+    obj = s3_client.meta.client.get_object(Bucket=bucket, Key=key)
     return pd.read_csv(io.BytesIO(obj["Body"].read()), **args)
 
 
@@ -32,7 +42,7 @@ def gpd_read_s3_gpk(s3_client, key, bucket, driver="GPKG", **args):
     read geopandas dataframe from s3 bucket
     """
 
-    response = s3_client.get_object(Bucket=bucket, Key=key)
+    response = s3_client.meta.client.get_object(Bucket=bucket, Key=key)
 
     data = response["Body"].read()
 
@@ -53,6 +63,7 @@ def get_s3_cabcm():
 
     for var in model_vars:
         df = pd_read_s3_parquet(
+            s3_client=s3,
             key=f"water_balance/cabcm/{var}.parquet",
             bucket="tnc-dangermond",
         )

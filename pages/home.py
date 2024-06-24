@@ -77,8 +77,8 @@ layout = html.Div(
                         dcc.Loading(
                             parent_className="loading_wrapper",
                             children=[
-                                html.Div(html.H4("Dangermond Preserve Template")),
-                                html.Div(html.P("Dashboard / web app")),
+                                html.Div(html.H4("Dangermond Preserve")),
+                                html.Div(html.P("Model Output Explorer")),
                                 html.Hr(
                                     style={
                                         "borderWidth": "1px",
@@ -87,7 +87,10 @@ layout = html.Div(
                                         "opacity": "unset",
                                     }
                                 ),
-                                html.Div(id="contents"),
+                                html.Br(),
+                                # shows selected reach
+                                # html.Div(id="contents"),
+                                #
                                 # html.Div("Buttons"),
                                 # html.Div(
                                 #     [
@@ -123,49 +126,48 @@ layout = html.Div(
                                 #     ],
                                 #     className="d-md-flex mt-1",
                                 # ),
-                                # html.Div("Or custom range:"),
-                                # dcc.DatePickerRange(
-                                #     display_format="YYYY/MM/DD",
-                                #     id="date-picker-range",
-                                #     number_of_months_shown=1,
-                                #     month_format="MMM YYYY",
-                                #     end_date_placeholder_text="MMM Do, YY",
-                                #     style={"zIndex": 1001},
-                                #     className="dash-bootstrap",
-                                # ),
-                                # dbc.FormText("(YYYY/MM/DD)"),
+                                html.Div("Select custom time range:"),
+                                dcc.DatePickerRange(
+                                    display_format="YYYY/MM/DD",
+                                    id="date-picker-range",
+                                    number_of_months_shown=1,
+                                    month_format="MMM YYYY",
+                                    end_date_placeholder_text="MMM Do, YY",
+                                    style={"zIndex": 1001},
+                                    className="dash-bootstrap",
+                                ),
+                                dbc.FormText("(YYYY/MM/DD)"),
+                                html.Br(),
                                 # html.Br(),
-                                # # html.Br(),
-                                # html.Div(
-                                #     [
-                                #         dbc.Label("Select Button:"),
-                                #         dbc.Checklist(
-                                #             options=[
-                                #                 {
-                                #                     "label": "Button",
-                                #                     "value": "Rain",
-                                #                 },
-                                #                 {
-                                #                     "label": "Button",
-                                #                     "value": "Snow",
-                                #                 },
-                                #                 {"label": "Button", "value": "Mix"},
-                                #             ],
-                                #             value=["Rain", "Snow", "Mix"],
-                                #             id="switches-input",
-                                #             switch=True,
-                                #             style={
-                                #                 "padding": "0rem 0rem 0rem 1.5rem",
-                                #                 # "color": "pink",
-                                #             },
-                                #             # input_style={"color": "pink"},
-                                #             # input_class_name="custom-checkbox custom-control-input",
-                                #             # label_checked_class_name="custom-control-label",
-                                #         ),
-                                #     ],
-                                #     # className="custom-control custom-switch",
-                                #     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
-                                # ),
+                                html.Div(
+                                    [
+                                        dbc.Label("Model Formulation:"),
+                                        dbc.Checklist(
+                                            options=[
+                                                {
+                                                    "label": "NextGen",
+                                                    "value": "Rain",
+                                                },
+                                                {
+                                                    "label": "LSTM",
+                                                    "value": "Snow",
+                                                },
+                                            ],
+                                            value=["Rain", "Snow"],
+                                            id="switches-input",
+                                            switch=True,
+                                            style={
+                                                "padding": "0rem 0rem 0rem 1.5rem",
+                                                # "color": "pink",
+                                            },
+                                            # input_style={"color": "pink"},
+                                            # input_class_name="custom-checkbox custom-control-input",
+                                            # label_checked_class_name="custom-control-label",
+                                        ),
+                                    ],
+                                    # className="custom-control custom-switch",
+                                    # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
+                                ),
                                 # html.Br(),
                                 # dbc.Label("Select Bounds:"),
                                 # html.Div(
@@ -228,19 +230,20 @@ layout = html.Div(
                                 #         ),
                                 #     ]
                                 # ),
-                                # html.Div(
-                                #     [
-                                #         dbc.Button(
-                                #             "Download Data",
-                                #             color="primary",
-                                #             disabled=True,
-                                #             id="download-data-button",
-                                #         ),
-                                #         dcc.Download(id="download-dataframe-csv"),
-                                #     ],
-                                #     className="d-grid gap-2",
-                                #     style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
-                                # ),
+                                html.Br(),
+                                html.Div(
+                                    [
+                                        dbc.Button(
+                                            "Download Data",
+                                            color="primary",
+                                            disabled=True,
+                                            id="download-data-button",
+                                        ),
+                                        dcc.Download(id="download-dataframe-csv"),
+                                    ],
+                                    className="d-grid gap-2",
+                                    style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                ),
                                 # html.Br(),
                                 # html.Div(id="click-modal"),
                                 # dcc.Graph(
@@ -263,7 +266,7 @@ layout = html.Div(
                         ),
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
-                    lg=2,
+                    lg=3,
                     # className="col-9",
                     style={
                         "background-color": "white",
@@ -346,7 +349,7 @@ def water_balance_figure(fp_click):
     df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
     df_all.columns = model_vars
 
-    fig = px.line(df_all, title=idx)
+    fig = px.line(df_all)
     fig.update_layout(
         # width=100vh,
         # height=100vw,

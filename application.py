@@ -50,10 +50,9 @@ logging.setLogRecordFactory(_record_factory)
 load_dotenv()
 
 
-# MAPBOX_API_KEY = os.getenv("MBAPI")
-
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 DASH_PROD = os.getenv("DASH_PROD")
+print(f"{DASH_PROD=}")
 
 
 def create_app():
