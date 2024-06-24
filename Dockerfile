@@ -1,9 +1,11 @@
 # base image
-FROM osgeo/gdal:ubuntu-small-3.6.3
+#FROM osgeo/gdal:ubuntu-small-3.6.3
+# Specify amd64 arch for Render deployment
+FROM ghcr.io/osgeo/gdal:ubuntu-small-latest-amd64
 
 # # Install dependencies
 RUN apt-get update && \
-    apt-get install -y python3 python3-dev python3-pip build-essential \
+    apt-get install -y python3 python3-dev python3-pip python3-venv build-essential \
     libpq-dev gdal-bin libgdal-dev aptitude && \
     aptitude install -y libgdal-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -12,9 +14,18 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Install dependencies
-RUN pip install -i https://m.devpi.net/jaraco/dev suds-jurko
+#RUN pip install -i https://m.devpi.net/jaraco/dev suds-jurko
 COPY requirements.txt /app
-RUN pip3 install -r requirements.txt
+
+
+# use venv due to pep 688 enforcing environment use
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install dependencies:
+RUN pip install -i https://m.devpi.net/jaraco/dev suds-jurko
+RUN pip install -r requirements.txt
 
 
 # environment variables for static assets and templates
@@ -25,7 +36,6 @@ ENV DOCKER_BUILDKIT=0
 ENV DASH_PROD=True
 
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-ENV MAPBOX_API_KEY=pk.eyJ1IjoiZG1yYWdhciIsImEiOiJjbG9nYXI0ZGYwdHB0MmlwZWFvNGh3NXVwIn0.ykWdWVZEY2fqNvsXcgFl3Q
 
 # copy files
 COPY application.py /app
