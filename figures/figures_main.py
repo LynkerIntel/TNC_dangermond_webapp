@@ -26,6 +26,7 @@ def mapbox_lines(gdf, gdf_outline):
     fig.update_layout(
         # width=100vh,
         # height=100vw,
+        showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
         # uirevision="Don't change",
