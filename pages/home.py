@@ -43,10 +43,11 @@ MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 gdf = data_loader.get_local_hydrofabric()
 gdf_outline = data_loader.get_outline()
+gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
 dfs = data_loader.get_s3_cabcm()
 
 
-map_fig = figures_main.mapbox_lines(gdf, gdf_outline)
+map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 
 
@@ -89,7 +90,7 @@ layout = html.Div(
                                 ),
                                 html.Br(),
                                 # shows selected reach
-                                # html.Div(id="contents"),
+                                html.Div(id="contents"),
                                 #
                                 # html.Div("Buttons"),
                                 # html.Div(
@@ -302,8 +303,6 @@ layout = html.Div(
 
 
 # # Callbacks ----------------
-
-
 @callback(Output("contents", "children"), Input("map", "clickData"))
 def update_contents(clickData):
     """
@@ -315,7 +314,7 @@ def update_contents(clickData):
         fp = clickData["points"][0]["hovertext"]
         # dff = df[df["centroid_lat"] == fips]
     else:
-        fp = 1
+        fp = "cat-1"
 
     return html.Div(
         [
@@ -338,11 +337,11 @@ def water_balance_figure(fp_click):
     Define time series figure locations on map.
     """
     if fp_click is None:
-        fp = 1
+        idx = "cat-1"
     else:
-        fp = fp_click["points"][0]["hovertext"]
+        idx = fp_click["points"][0]["hovertext"]
 
-    idx = f"fp_{fp}"  # translate number to column
+    # idx = f"fp_{fp}"  # translate number to column
     print(f"{idx=}")
     # subset of full vars
     model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
@@ -363,7 +362,7 @@ def water_balance_figure(fp_click):
     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
 
-    print(fig["data"])
+    # print(fig["data"])
     return fig
 
 
