@@ -10,8 +10,6 @@ import os
 # initialize boto3 S3 client
 # s3 = boto3.client("s3")
 
-print("test key:")
-
 # note, boto3 will ignore this if local aws credentials exist
 s3 = boto3.resource(
     "s3",
@@ -85,8 +83,13 @@ def get_s3_hydrofabric():
     return gdf
 
 
-def get_local_hydrofabric():
-    gdf = gpd.read_file("./data/refactor_hydrofabric.gpkg")
+def get_local_hydrofabric(**kwargs):
+    """Read from data dir
+
+    kwargs for gpd.read_file can be supplied, such as layer_name for
+    multilayere geopackages
+    """
+    gdf = gpd.read_file("./data/nextgen_hydrofabric.gpkg", **kwargs)
     gdf = gdf.to_crs("EPSG:4326")
     return gdf
 
@@ -98,13 +101,13 @@ def get_outline():
     return gdf
 
 
-def mapbox_line_gdf_fmt(gdf):
+def mapbox_line_gdf_fmt(gdf, id_col="ID"):
     """ """
     lats = []
     lons = []
     names = []
 
-    for feature, name in zip(gdf.geometry, gdf["ID"]):
+    for feature, name in zip(gdf.geometry, gdf[id_col]):
         if isinstance(feature, shapely.geometry.linestring.LineString):
             linestrings = [feature]
         elif isinstance(feature, shapely.geometry.multilinestring.MultiLineString):
