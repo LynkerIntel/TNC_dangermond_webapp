@@ -6,12 +6,12 @@ import json
 import data_loader
 
 
-def mapbox_lines(gdf, gdf_outline):
+def mapbox_lines(gdf, gdf_outline, gdf_cat):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     # get formatted data
-    lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf)
+    lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf, id_col="divide_id")
 
     fig = px.line_mapbox(
         lat=lats, lon=lons, hover_name=names, mapbox_style="carto-positron", zoom=10
@@ -20,8 +20,16 @@ def mapbox_lines(gdf, gdf_outline):
     # add dandgermond outline
     outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
     outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
+    fig.add_trace(
+        go.Scattermapbox(lat=outline_lats, lon=outline_lons, mode="lines"),
+    )
 
-    fig.add_trace(go.Scattermapbox(lat=outline_lats, lon=outline_lons, mode="lines"))
+    # add catchment outline (single outline currently)
+    catchment_lats = list(gdf_cat["geometry"][0].exterior.xy[1])
+    catchment_lons = list(gdf_cat["geometry"][0].exterior.xy[0])
+    fig.add_trace(
+        go.Scattermapbox(lat=catchment_lats, lon=catchment_lons, mode="lines")
+    )
 
     fig.update_layout(
         # width=100vh,
