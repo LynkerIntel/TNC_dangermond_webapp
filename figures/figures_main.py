@@ -21,14 +21,21 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat):
     outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
     outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
     fig.add_trace(
-        go.Scattermapbox(lat=outline_lats, lon=outline_lons, mode="lines"),
+        go.Scattermapbox(
+            lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
+        ),
     )
 
     # add catchment outline (single outline currently)
     catchment_lats = list(gdf_cat["geometry"][0].exterior.xy[1])
     catchment_lons = list(gdf_cat["geometry"][0].exterior.xy[0])
     fig.add_trace(
-        go.Scattermapbox(lat=catchment_lats, lon=catchment_lons, mode="lines")
+        go.Scattermapbox(
+            lat=catchment_lats,
+            lon=catchment_lons,
+            mode="lines",
+            # hovertext=gdf_cat["divide_id"].tolist(),
+        )
     )
 
     fig.update_layout(
