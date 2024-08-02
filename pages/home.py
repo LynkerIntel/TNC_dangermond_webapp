@@ -280,7 +280,7 @@ layout = html.Div(
                             dcc.Graph(
                                 figure=map_fig,
                                 id="map",
-                                style={"height": "40vh"},
+                                style={"height": "50vh"},
                                 # style={"height": "100vh", "width": "100vw"},
                                 config={"displaylogo": False},
                                 # className="flex-fill",
@@ -288,7 +288,7 @@ layout = html.Div(
                             dcc.Graph(
                                 # figure=wb_ts_fig,
                                 id="wb_ts_fig",
-                                # style={"width": "83.1vw", "height": "94vh"},
+                                style={"height": "50vh"},
                                 # style={"height": "100vh", "width": "100vw"},
                                 config={"displaylogo": False},
                                 # className="flex-fill",
@@ -311,10 +311,10 @@ def update_contents(clickData):
     if clickData:
         print("clicked")
         print(clickData)
-        fp = clickData["points"][0]["hovertext"]
+        id = clickData["points"][0]["customdata"][0]
         # dff = df[df["centroid_lat"] == fips]
     else:
-        fp = "cat-1"
+        id = 1
 
     return html.Div(
         [
@@ -323,47 +323,48 @@ def update_contents(clickData):
             #     columns=[{"name": i, "id": i} for i in dff.columns],
             #     data=dff.to_dict(orient="records"),
             # )
-            fp
+            id
         ]
     )
 
 
-@callback(
-    Output("wb_ts_fig", "figure"),
-    Input("map", "clickData"),
-)
-def water_balance_figure(fp_click):
-    """
-    Define time series figure locations on map.
-    """
-    if fp_click is None:
-        idx = "cat-1"
-    else:
-        idx = fp_click["points"][0]["hovertext"]
+# this callback visualized CABCM data
+# @callback(
+#     Output("wb_ts_fig", "figure"),
+#     Input("map", "clickData"),
+# )
+# def water_balance_figure(fp_click):
+#     """
+#     Define time series figure locations on map.
+#     """
+#     if fp_click is None:
+#         idx = "cat-1"
+#     else:
+#         idx = fp_click["points"][0]["hovertext"]
 
-    # idx = f"fp_{fp}"  # translate number to column
-    print(f"{idx=}")
-    # subset of full vars
-    model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
-    df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
-    df_all.columns = model_vars
+#     # idx = f"fp_{fp}"  # translate number to column
+#     print(f"{idx=}")
+#     # subset of full vars
+#     model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
+#     df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
+#     df_all.columns = model_vars
 
-    fig = px.line(df_all)
-    fig.update_layout(
-        # width=100vh,
-        # height=100vw,
-        autosize=True,
-        margin=dict(l=20, r=10, t=45, b=0),
-        # uirevision="Don't change",
-        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-    )
+#     fig = px.line(df_all)
+#     fig.update_layout(
+#         # width=100vh,
+#         # height=100vw,
+#         autosize=True,
+#         margin=dict(l=20, r=10, t=45, b=0),
+#         # uirevision="Don't change",
+#         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+#     )
 
-    fig.update_layout(plot_bgcolor="white")
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+#     fig.update_layout(plot_bgcolor="white")
+#     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+#     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
 
-    # print(fig["data"])
-    return fig
+#     # print(fig["data"])
+#     return fig
 
 
 @callback(
@@ -371,30 +372,71 @@ def water_balance_figure(fp_click):
     Input("map", "clickData"),
     prevent_initial_call=True,
 )
-def higlight_line_segment_on_map(fp_click):
+def higlight_line_segment_on_map(id_click):
     """
-    Highlight line segment to make user selection more obvious.
+    Highlight line segment to make user selection more obvious. This method use linestrings, rather
+    than polygons, to provide higlighting around the polygons.
     """
     print("highlight callback fired")
 
-    if fp_click is None:
-        fp = 1
+    if id_click is None:
+        id = 1
     else:
-        fp = fp_click["points"][0]["hovertext"]
+        id = id_click["points"][0]["customdata"][0]
 
     # country_count = list(df[df.country.isin(countries)].index)
     patched_figure = Patch()
     # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
     # patched_figure["data"][0]["line"]["color"] = updated_markers
+    print(id)
+    subset = gdf[gdf["feature_id"] == id]
+    print(subset)
 
-    subset = gdf[gdf["ID"] == fp]
-    x = list(subset.iloc[0].geometry.coords.xy[0])
-    y = list(subset.iloc[0].geometry.coords.xy[1])
+    # if geometry is a LINESTRING
+    # catchment_lats = list(subset["geometry"][0].exterior.xy[1])
+    # catchment_lons = list(subset["geometry"][0].exterior.xy[0])
 
-    # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
-    patched_figure["data"][2] = go.Scattermapbox(
-        mode="lines", lon=x, lat=y, line_color="green", line_width=5, name="test"
+    # if geometry is a POLYGON
+    catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
+    catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
+
+    data = go.Scattermapbox(
+        lat=catchment_lats,
+        lon=catchment_lons,
+        mode="lines",
+        # hovertext=gdf_cat["divide_id"].tolist(),
     )
+
+    # patched_figure["data"][2] = px.choropleth_mapbox(
+    #     gdf,
+    #     geojson=gdf.geometry,
+    #     locations=gdf.index,
+    #     color="feature_id",
+    #     center={"lat": 39.7, "lon": -107},  # not sure why this is not automatic
+    #     mapbox_style="open-street-map",
+    #     zoom=7,
+    # )
+
+    # # generate fig, to use convinent gdf methods
+    # fig = px.choropleth_mapbox(
+    #     subset,
+    #     geojson=subset.geometry,
+    #     locations=subset.index,
+    #     # color="feature_id",
+    #     # center={"lat": 39.7, "lon": -107},
+    #     # mapbox_style="open-street-map",
+    # )
+
+    # fig = fig.update_traces(marker_line_width=13, marker_line_color="red")
+    # # ignore the plot aspects
+    # data = fig["data"]
+
+    # print("new patch data:")
+    # print(data)
+    # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
+    # patched_figure["data"][0] = data
+
+    patched_figure["data"][1] = data
 
     return patched_figure
 

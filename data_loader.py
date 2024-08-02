@@ -87,11 +87,24 @@ def get_local_hydrofabric(**kwargs):
     """Read from data dir
 
     kwargs for gpd.read_file can be supplied, such as layer_name for
-    multilayere geopackages
+    multilayere geopackages.
+
+    TEMP METHOD for standin data
     """
-    gdf = gpd.read_file("./data/nextgen_hydrofabric.gpkg", **kwargs)
+    gdf = gpd.read_file("./data/palisade.gpkg", **kwargs)
     gdf = gdf.to_crs("EPSG:4326")
+    gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
     return gdf
+
+
+def get_local_routing():
+    """
+    temp method for placeholder data
+    """
+    df = pd.read_csv(
+        "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
+    )
+    return df
 
 
 def get_outline():
