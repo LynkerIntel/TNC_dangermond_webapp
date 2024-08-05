@@ -104,6 +104,14 @@ def get_local_routing():
     df = pd.read_csv(
         "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
     )
+    # create timestamp col
+    df["t0"] = pd.to_datetime(df["t0"])
+    df["time"] = pd.to_timedelta(df["time"])
+    df["timestamp"] = df["t0"] + df["time"]
+    # make index and rm
+    df.index = df["timestamp"]
+    df.drop(columns="timestamp", inplace=True)
+
     return df
 
 

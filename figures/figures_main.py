@@ -50,7 +50,8 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat):
             lat=catchment_lats,
             lon=catchment_lons,
             mode="lines",
-            # hovertext=gdf_cat["divide_id"].tolist(),
+            hoverinfo="skip",
+            opacity=0,
         )
     )
 
