@@ -98,22 +98,33 @@ def get_local_hydrofabric():
     return gdf
 
 
-def get_local_routing():
-    """
-    temp method for placeholder data
-    """
+def get_local_basin_q():
+    """Q from NexGen simulation (and gage obs)"""
     df = pd.read_csv(
-        "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
+        "/Users/dillonragar/data/tnc/output_2024_09_26/output_sim_obs/sim_obs_24.csv",
+        index_col="time",
     )
-    # create timestamp col
-    df["t0"] = pd.to_datetime(df["t0"])
-    df["time"] = pd.to_timedelta(df["time"])
-    df["timestamp"] = df["t0"] + df["time"]
-    # make index and rm
-    df.index = df["timestamp"]
-    df.drop(columns="timestamp", inplace=True)
-
+    df.index = pd.to_datetime(df.index)
+    df = df[["sim_flow", "obs_flow"]]
     return df
+
+
+# def get_local_routing():
+#     """
+#     temp method for placeholder data
+#     """
+#     df = pd.read_csv(
+#         "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
+#     )
+#     # create timestamp col
+#     df["t0"] = pd.to_datetime(df["t0"])
+#     df["time"] = pd.to_timedelta(df["time"])
+#     df["timestamp"] = df["t0"] + df["time"]
+#     # make index and rm
+#     df.index = df["timestamp"]
+#     df.drop(columns="timestamp", inplace=True)
+
+#     return df
 
 
 def get_outline():
