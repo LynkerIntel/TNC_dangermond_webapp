@@ -25,7 +25,7 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat):
         geojson=gdf.geometry,
         locations=gdf.index,
         opacity=1,
-        # color="feature_id",
+        color="feature_id",
         hover_data=["feature_id"],
         center={"lat": 39.7, "lon": -107},  # not sure why this is not automatic
         mapbox_style="open-street-map",
