@@ -27,9 +27,9 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat):
         opacity=1,
         color="feature_id",
         hover_data=["feature_id"],
-        center={"lat": 39.7, "lon": -107},  # not sure why this is not automatic
+        center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
         mapbox_style="open-street-map",
-        zoom=7,
+        zoom=10.3,
     )
 
     # add dandgermond outline

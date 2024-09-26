@@ -43,7 +43,7 @@ MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 gdf = data_loader.get_local_hydrofabric()
 gdf_outline = data_loader.get_outline()
-gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
+gdf_cat = data_loader.get_local_hydrofabric()
 dfs = data_loader.get_s3_cabcm()
 df_route = data_loader.get_local_routing()
 

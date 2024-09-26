@@ -83,7 +83,7 @@ def get_s3_hydrofabric():
     return gdf
 
 
-def get_local_hydrofabric(**kwargs):
+def get_local_hydrofabric():
     """Read from data dir
 
     kwargs for gpd.read_file can be supplied, such as layer_name for
@@ -91,8 +91,9 @@ def get_local_hydrofabric(**kwargs):
 
     TEMP METHOD for standin data
     """
-    gdf = gpd.read_file("./data/palisade.gpkg", **kwargs)
+    gdf = gpd.read_file("./data/jldp_ngen_nhdhr.gpkg", layer="divides")
     gdf = gdf.to_crs("EPSG:4326")
+    print(gdf)
     gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
     return gdf
 
