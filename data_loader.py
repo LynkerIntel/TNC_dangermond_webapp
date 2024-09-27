@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+import xarray as xr
 import boto3
 import io
 import geopandas as gpd
 import shapely.geometry
 import os
+from pathlib import Path
 
 
 # initialize boto3 S3 client
@@ -109,22 +111,68 @@ def get_local_basin_q():
     return df
 
 
-# def get_local_routing():
-#     """
-#     temp method for placeholder data
-#     """
-#     df = pd.read_csv(
-#         "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
-#     )
-#     # create timestamp col
-#     df["t0"] = pd.to_datetime(df["t0"])
-#     df["time"] = pd.to_timedelta(df["time"])
-#     df["timestamp"] = df["t0"] + df["time"]
-#     # make index and rm
-#     df.index = df["timestamp"]
-#     df.drop(columns="timestamp", inplace=True)
+def get_local_routing():
+    """
+    temp method for placeholder data
+    """
+    df = pd.read_csv(
+        "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
+    )
+    # create timestamp col
+    df["t0"] = pd.to_datetime(df["t0"])
+    df["time"] = pd.to_timedelta(df["time"])
+    df["timestamp"] = df["t0"] + df["time"]
+    # make index and rm
+    df.index = df["timestamp"]
+    df.drop(columns="timestamp", inplace=True)
 
-#     return df
+    return df
+
+
+def ngen_csv_to_df(path):
+    """Loads nexgen csv outputs
+
+    Parameters
+    path (str): locations in nexgen output with catchment .csv files
+    """
+    cat_paths = list(Path(path).glob("cat-*.csv"))
+
+    catchments = [p.stem for p in cat_paths]
+    df_lst = [
+        pd.read_csv(p, index_col=["Time"], parse_dates=["Time"]) for p in cat_paths
+    ]
+    # myDict = {k: pd.read_csv(v, index_col=["Time"]) for (k, v) in zip(cats, cat_paths)}
+
+    return df_lst, catchments
+
+
+def ngen_df_to_xr(df_lst, cats):
+    """Method to parse nexgen model outputs"""
+    data_vars = {}
+
+    # Loop through each DataFrame and each variable (column) to create DataArrays
+    for df, catchment in zip(df_lst, cats):
+        for column in df.columns:
+            if column not in data_vars:
+                # Initialize a list for this variable if not already present
+                data_vars[column] = []
+            # Create a DataArray for each variable and append it, ensuring we capture catchment name
+            data_vars[column].append(
+                xr.DataArray(
+                    df[column].values,
+                    dims=["Time"],
+                    coords={"Time": df.index},  # Only time for now
+                )
+            )
+
+    # Concatenate each variable's DataArrays along the 'catchment' dimension
+    for var in data_vars:
+        # Concatenate across the catchment dimension using the "cats" list for catchment names
+        data_vars[var] = xr.concat(data_vars[var], dim=pd.Index(cats, name="catchment"))
+
+    # Now, create the final dataset
+    ds = xr.Dataset(data_vars)
+    return ds
 
 
 def get_outline():
