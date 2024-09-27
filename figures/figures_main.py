@@ -6,26 +6,22 @@ import json
 import data_loader
 
 
-def mapbox_lines(gdf, gdf_outline, gdf_cat):
+def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
-    # get formatted data
-    # lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf, id_col="divide_id")
+    # get nexgen output to color polygons by
+    colors = ds["SOIL_STORAGE"].sel(Time="1981-10-01 12:00:00").to_dataframe()
+    colors = colors[["SOIL_STORAGE"]]
 
-    # fig = px.line_mapbox(
-    #     lat=lats, lon=lons, hover_name=names, mapbox_style="carto-positron", zoom=10
-    # )
-
-    # temp testing
-    # gdf = gdf.iloc[:3]
+    gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
 
     fig = px.choropleth_mapbox(
-        gdf,
-        geojson=gdf.geometry,
+        gdf_color,
+        geojson=gdf_color.geometry,
         locations=gdf.index,
         opacity=1,
-        color="feature_id",
+        color="SOIL_STORAGE",
         hover_data=["feature_id"],
         center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
         mapbox_style="open-street-map",

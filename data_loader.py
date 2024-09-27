@@ -95,8 +95,9 @@ def get_local_hydrofabric():
     """
     gdf = gpd.read_file("./data/jldp_ngen_nhdhr.gpkg", layer="divides")
     gdf = gdf.to_crs("EPSG:4326")
-    print(gdf)
+    # print(gdf)
     gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
+    gdf["catchment"] = gdf["divide_id"]  # for joining w/ ngen data
     return gdf
 
 
@@ -146,8 +147,12 @@ def ngen_csv_to_df(path):
     return df_lst, catchments
 
 
-def ngen_df_to_xr(df_lst, cats):
+def ngen_df_to_xr(path):
     """Method to parse nexgen model outputs"""
+
+    # get ngen output as list of dfs and names
+    df_lst, cats = ngen_csv_to_df(path)
+
     data_vars = {}
 
     # Loop through each DataFrame and each variable (column) to create DataArrays

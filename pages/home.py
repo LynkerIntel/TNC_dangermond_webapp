@@ -45,10 +45,12 @@ gdf = data_loader.get_local_hydrofabric()
 gdf_outline = data_loader.get_outline()
 gdf_cat = data_loader.get_local_hydrofabric()
 dfs = data_loader.get_s3_cabcm()
-df_route = data_loader.get_local_routing()
+ds_ngen = data_loader.ngen_df_to_xr(
+    "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
+)
 
 
-map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
+# map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 
 
@@ -166,6 +168,18 @@ layout = html.Div(
                                             # input_class_name="custom-checkbox custom-control-input",
                                             # label_checked_class_name="custom-control-label",
                                         ),
+                                        dcc.Dropdown(
+                                            id="column-dropdown",
+                                            options=[
+                                                {"label": col, "value": col}
+                                                for col in [
+                                                    "value_1",
+                                                    "value_2",
+                                                    "value_3",
+                                                ]
+                                            ],
+                                            value="Q_OUT",  # Default value
+                                        ),
                                     ],
                                     # className="custom-control custom-switch",
                                     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
@@ -279,8 +293,8 @@ layout = html.Div(
                     html.Div(
                         [
                             dcc.Graph(
-                                figure=map_fig,
-                                id="map",
+                                # figure=map_fig,
+                                id="choropleth-map",
                                 style={"height": "40vh"},
                                 # style={"height": "100vh", "width": "100vw"},
                                 config={"displaylogo": False},
@@ -327,6 +341,16 @@ def update_contents(clickData):
             id
         ]
     )
+
+
+# Callback to update map based on selected column
+@callback(Output("choropleth-map", "figure"), [Input("column-dropdown", "value")])
+def mapbox_lines(display_var):
+    """
+    Primary map with flowpaths within Dangermond Preserve.
+    """
+    print(display_var)
+    return figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds_ngen)
 
 
 # this callback visualized CABCM data
