@@ -6,13 +6,13 @@ import json
 import data_loader
 
 
-def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds):
+def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     # get nexgen output to color polygons by
-    colors = ds["SOIL_STORAGE"].sel(Time="1981-10-01 12:00:00").to_dataframe()
-    colors = colors[["SOIL_STORAGE"]]
+    colors = ds[display_var].sel(Time="1981-10-01 12:00:00").to_dataframe()
+    colors = colors[[display_var]]
 
     gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
 
@@ -21,7 +21,7 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds):
         geojson=gdf_color.geometry,
         locations=gdf.index,
         opacity=1,
-        color="SOIL_STORAGE",
+        color=display_var,
         hover_data=["feature_id"],
         center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
         mapbox_style="open-street-map",
@@ -48,6 +48,19 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds):
             mode="lines",
             hoverinfo="skip",
             opacity=0,
+        )
+    )
+
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=gdf_wells["lat"],
+            lon=gdf_wells["lon"],
+            mode="markers+text",  # You can also use 'markers' or 'text' alone
+            marker=go.scattermapbox.Marker(
+                size=6, color="white"  # You can change the marker color
+            ),
+            text=gdf_wells["name"],  # Text labels for each point
+            hoverinfo="text",
         )
     )
 
