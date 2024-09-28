@@ -41,14 +41,15 @@ dash.register_page(__name__, path="/")
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
-gdf = data_loader.get_local_hydrofabric()
+gdf = data_loader.get_local_hydrofabric(layer="divides")
 gdf_outline = data_loader.get_outline()
-gdf_cat = data_loader.get_local_hydrofabric()
+gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
+gdf_wells = data_loader.get_local_hydrofabric(layer="wells")
 dfs = data_loader.get_s3_cabcm()
 ds_ngen = data_loader.ngen_df_to_xr(
     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
 )
-
+df_q = data_loader.ngen_basin_q()
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
@@ -173,9 +174,9 @@ layout = html.Div(
                                             options=[
                                                 {"label": col, "value": col}
                                                 for col in [
-                                                    "value_1",
-                                                    "value_2",
-                                                    "value_3",
+                                                    "SOIL_STORAGE",
+                                                    "INFILTRATION_EXCESS",
+                                                    "Q_OUT",
                                                 ]
                                             ],
                                             value="Q_OUT",  # Default value
@@ -318,7 +319,7 @@ layout = html.Div(
 
 
 # # Callbacks ----------------
-@callback(Output("contents", "children"), Input("map", "clickData"))
+@callback(Output("contents", "children"), Input("choropleth-map", "clickData"))
 def update_contents(clickData):
     """
     get click data from primary map, add to layout.
@@ -350,38 +351,39 @@ def mapbox_lines(display_var):
     Primary map with flowpaths within Dangermond Preserve.
     """
     print(display_var)
-    return figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds_ngen)
+    return figures_main.mapbox_lines(
+        gdf=gdf,
+        gdf_outline=gdf_outline,
+        gdf_cat=gdf_cat,
+        display_var=display_var,
+        ds=ds_ngen,
+        gdf_wells=gdf_wells,
+    )
 
 
 # this callback visualized CABCM data
 @callback(
     Output("wb_ts_fig", "figure"),
-    Input("map", "clickData"),
+    Input("choropleth-map", "clickData"),
 )
 def water_balance_figure(id_click):
     """
     Define time series figure locations on map.
     """
-    if id_click is None:
-        id = 2614389
-    else:
-        id = id_click["points"][0]["customdata"][0]
+    # if id_click is None:
+    #     id = 2614389
+    # else:
+    #     id = id_click["points"][0]["customdata"][0]
 
-    # idx = f"fp_{fp}"  # translate number to column
-    # print(f"{idx=}")
-    # # subset of full vars
-    # #model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
-    # #df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
-    # df_all.columns = model_vars
-    df_sub = df_route[df_route["feature_id"] == id]
+    # df_sub = df_route[df_route["feature_id"] == id]
 
-    fig = px.line(df_sub["flow"])
+    fig = px.line(df_q)
     fig.update_layout(
         # width=100vh,
         # height=100vw,
         autosize=True,
         margin=dict(l=20, r=10, t=45, b=0),
-        title={"text": f"Catchment - {id}"},
+        # title={"text": f"Catchment - {id}"},
         title_x=0.5,
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
@@ -396,8 +398,8 @@ def water_balance_figure(id_click):
 
 
 @callback(
-    Output("map", "figure"),
-    Input("map", "clickData"),
+    Output("choropleth-map", "figure", allow_duplicate=True),
+    Input("choropleth-map", "clickData"),
     prevent_initial_call=True,
 )
 def higlight_line_segment_on_map(id_click):
