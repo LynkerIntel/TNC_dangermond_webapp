@@ -85,7 +85,7 @@ def get_s3_hydrofabric():
     return gdf
 
 
-def get_local_hydrofabric():
+def get_local_hydrofabric(layer):
     """Read from data dir
 
     kwargs for gpd.read_file can be supplied, such as layer_name for
@@ -93,15 +93,21 @@ def get_local_hydrofabric():
 
     TEMP METHOD for standin data
     """
-    gdf = gpd.read_file("./data/jldp_ngen_nhdhr.gpkg", layer="divides")
+    gdf = gpd.read_file("./data/jldp_ngen_nhdhr.gpkg", layer=layer)
     gdf = gdf.to_crs("EPSG:4326")
-    # print(gdf)
-    gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
-    gdf["catchment"] = gdf["divide_id"]  # for joining w/ ngen data
+
+    if layer == "divides":
+        gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
+        gdf["catchment"] = gdf["divide_id"]  # for joining w/ ngen data
+
+    elif layer == "wells":
+        gdf["lon"] = gdf.geometry.x  # Extract longitude
+        gdf["lat"] = gdf.geometry.y  # Extract latitude
+
     return gdf
 
 
-def get_local_basin_q():
+def ngen_basin_q():
     """Q from NexGen simulation (and gage obs)"""
     df = pd.read_csv(
         "/Users/dillonragar/data/tnc/output_2024_09_26/output_sim_obs/sim_obs_24.csv",
