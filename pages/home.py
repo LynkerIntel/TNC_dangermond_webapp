@@ -21,6 +21,9 @@ from dash import (
     dash_table,
     ctx,
 )
+
+from dash.exceptions import PreventUpdate
+
 import dash_bootstrap_components as dbc
 from flask import Flask
 import numpy as np
@@ -50,6 +53,9 @@ ds_ngen = data_loader.ngen_df_to_xr(
     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
 )
 df_q = data_loader.ngen_basin_q()
+
+
+fig = px.line(df_q)
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
@@ -309,6 +315,30 @@ layout = html.Div(
                                 config={"displaylogo": False},
                                 # className="flex-fill",
                             ),
+                            # DBC Modal
+                            dbc.Modal(
+                                [
+                                    dbc.ModalHeader(dbc.ModalTitle("Polygon Info")),
+                                    dbc.ModalBody(html.P(id="modal-content")),
+                                    dbc.ModalBody(
+                                        dcc.Graph(
+                                            id="modal-figure",
+                                            figure=fig,
+                                        )  # Include the figure inside the modal
+                                    ),
+                                    dbc.ModalFooter(
+                                        dbc.Button(
+                                            "Close",
+                                            id="close-modal",
+                                            className="ml-auto",
+                                            n_clicks=0,
+                                        )
+                                    ),
+                                ],
+                                id="modal",
+                                size="xl",
+                                is_open=False,  # Initially closed
+                            ),
                         ]
                     )
                 ),
@@ -320,15 +350,17 @@ layout = html.Div(
 
 # # Callbacks ----------------
 @callback(Output("contents", "children"), Input("choropleth-map", "clickData"))
-def update_contents(clickData):
+def update_contents(click_data):
     """
     get click data from primary map, add to layout.
     """
-    if clickData:
-        print("clicked")
-        print(clickData)
-        id = clickData["points"][0]["customdata"][0]
-        # dff = df[df["centroid_lat"] == fips]
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 0:
+            # print("clicked")
+            print(click_data)
+            id = click_data["points"][0]["customdata"][0]
+            # dff = df[df["centroid_lat"] == fips]
     else:
         id = 1
 
@@ -361,7 +393,61 @@ def mapbox_lines(display_var):
     )
 
 
-# this callback visualized CABCM data
+# Callback to handle click event and show/hide modal
+@callback(
+    Output("modal", "is_open"),
+    [Input("choropleth-map", "clickData"), Input("close-modal", "n_clicks")],
+    [State("modal", "is_open")],
+)
+def toggle_modal(click_data, n_clicks, is_open):
+    # check if click_data or None
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+
+        # set True if well location points have been clicked
+        if (layer == 2) and not is_open:
+            return True
+
+    # If the close button is clicked, close the modal
+    if n_clicks and is_open:
+        return False
+
+    return is_open  # Keep modal state unchanged if no click event
+
+
+# # Callback to update modal content based on click_data
+# @callback(
+#     Output("modal-content", "children"),
+#     Input("choropleth-map", "clickData"),
+# )
+# def update_modal_content(click_data):
+#     if click_data:
+#         # print(f"{click_data=}")
+#         layer = click_data["points"][0]["curveNumber"]
+#         # print(f"{layer=}")
+#         # Extract the clicked polygon information
+#         properties = click_data["points"][0]["location"]
+#         return f"Polygon ID: {properties}"
+#     return ""
+
+
+# Callback to update modal content based on clickData (optional if dynamic)
+@callback(
+    Output("modal-figure", "figure"),
+    Input("choropleth-map", "clickData"),
+    prevent_initial_call=True,
+    # suppress_callback_exceptions=True,
+)
+def update_modal_figure(click_data):
+    """Update modal fig"""
+    if click_data:
+        # properties = click_data["points"][0]["location"]
+        # You can modify the figure based on the clicked polygon, but for now, it returns the same figure
+
+        fig = px.line(df_q)
+        return fig
+
+
 @callback(
     Output("wb_ts_fig", "figure"),
     Input("choropleth-map", "clickData"),
@@ -402,367 +488,54 @@ def water_balance_figure(id_click):
     Input("choropleth-map", "clickData"),
     prevent_initial_call=True,
 )
-def higlight_line_segment_on_map(id_click):
+def higlight_line_segment_on_map(click_data):
     """
     Highlight line segment to make user selection more obvious. This method use linestrings, rather
     than polygons, to provide higlighting around the polygons.
     """
     print("highlight callback fired")
 
-    if id_click is None:
-        id = 1
-    else:
-        id = id_click["points"][0]["customdata"][0]
+    # if id_click is None:
+    #     id = 1
+    # else:
+    #     id = id_click["points"][0]["customdata"][0]
 
-    # country_count = list(df[df.country.isin(countries)].index)
-    patched_figure = Patch()
-    # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
-    # patched_figure["data"][0]["line"]["color"] = updated_markers
-    print(id)
-    subset = gdf[gdf["feature_id"] == id]
-    print(subset)
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
 
-    # if geometry is a LINESTRING
-    # catchment_lats = list(subset["geometry"][0].exterior.xy[1])
-    # catchment_lons = list(subset["geometry"][0].exterior.xy[0])
+        if layer == 0:
+            id = click_data["points"][0]["customdata"][0]
+            # country_count = list(df[df.country.isin(countries)].index)
+            patched_figure = Patch()
+            # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
+            # patched_figure["data"][0]["line"]["color"] = updated_markers
+            print(id)
+            subset = gdf[gdf["feature_id"] == id]
+            print(subset)
 
-    # if geometry is a POLYGON
-    catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
-    catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
+            # if geometry is a LINESTRING
+            # catchment_lats = list(subset["geometry"][0].exterior.xy[1])
+            # catchment_lons = list(subset["geometry"][0].exterior.xy[0])
 
-    data = go.Scattermapbox(
-        lat=catchment_lats,
-        lon=catchment_lons,
-        mode="lines",
-        hoverinfo="skip",
-        # hovertext=gdf_cat["divide_id"].tolist(),
-    )
+            # if geometry is a POLYGON
+            catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
+            catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
 
-    # print("new patch data:")
-    # print(data)
-    # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
-    # patched_figure["data"][0] = data
+            data = go.Scattermapbox(
+                lat=catchment_lats,
+                lon=catchment_lons,
+                mode="lines",
+                hoverinfo="skip",
+                # hovertext=gdf_cat["divide_id"].tolist(),
+            )
 
-    patched_figure["data"][1] = data
+            # print("new patch data:")
+            # print(data)
+            # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
+            # patched_figure["data"][0] = data
 
-    return patched_figure
+            patched_figure["data"][1] = data
 
+            return patched_figure
 
-# @callback(Output("map", "figure"), Input("update_contents", "value"))
-# def update_waterbalance_timeseries(click_data):
-#     """ """
-#     print("updating fig")
-
-
-# @callback(
-#     Output("map", "figure"),
-#     Input("date-picker-range", "start_date"),
-#     Input("date-picker-range", "end_date"),
-#     Input("switches-input", "value"),
-#     Input("input-elev-min", "value"),
-#     Input("input-elev-max", "value"),
-#     prevent_intial_call=True,
-# )
-# def update_visualization(start, end, phases, min_elev, max_elev):
-#     """
-#     Update the map data based on time range and phase selection. This is a
-#     partial property callback that only updates data.
-
-#     list 0 is hidden layer to preserve map layout, data traces start at index 1.
-
-#     :param (str) start: start date in "YYYY-MM-DD"
-#     :param (str) end: end dat in "YYYY-MM-DD"
-#     :param (list) phases: list containing up to three 3 strs of: ["Rain", "Snow", "Mix]
-
-#     :return (go.Patch): Update data for map
-#     """
-#     log.info("revising map data")
-#     print(min_elev, max_elev)
-
-#     df_sub = df_obs[df_obs["datetime_utc"].between(start, end)]
-#     df_sub = df_sub[df_sub["phase"].isin(phases)]
-
-#     if min_elev is None:
-#         min_elev = 0
-
-#     if max_elev is None:
-#         max_elev = 6000
-
-#     df_sub = df_sub[df_sub["elevation.m"].between(min_elev, max_elev)]
-
-#     patched_fig = Patch()
-
-#     # update data and hover info
-#     for i, phase in enumerate(["Rain", "Snow", "Mix"]):
-#         df = df_sub[df_sub["phase"] == phase]
-#         i += 1  # map layer 0 does not contain data traces
-#         patched_fig["data"][i]["lat"] = df["map_latitude"]
-#         patched_fig["data"][i]["lon"] = df["map_longitude"]
-
-#         # must match "customdata" attribute in figures_main.generate_map()
-#         patched_fig["data"][i]["customdata"] = df[
-#             [
-#                 "elevation.m",
-#                 "all.id",
-#                 "datetime_utc",
-#                 # "local_time",
-#             ]
-#         ].values
-
-#     return patched_fig
-
-
-# @callback(
-#     Output("download-dataframe-csv", "data"),
-#     Input("download-data-button", "n_clicks"),
-#     # Input("input-elev-min", "value"),
-#     # Input("input-elev-max", "value"),
-#     [State("map", "selectedData")],
-#     State("date-picker-range", "start_date"),
-#     State("date-picker-range", "end_date"),
-#     # State("input-elev-min", "value"),
-#     # State("input-elev-max", "value"),
-#     # State("switches-input", "value"),
-#     # State("map", "figure"),
-#     prevent_initial_call=True,
-#     suppress_callback_exceptions=True,
-# )
-# def download_prepare(n_clicks, selected_data, start, end):
-#     """
-#     Subset and save DataFrame to csv. Currently uses "all.id" in processed MROS data
-#     to uniquely identify observations.
-
-#     Several columns are dropped, including "all.id" and "map_latitude/map_longitude"
-#     as these are the jittered points using for display only.
-
-
-#     :param (int) n_clicks: unused
-#     :param (dict) selectedData: Figure output from plotly.js with selection
-#         data, and other state vars
-#     :param (str) start: start date in "YYYY-MM-DD"
-#     :param (str) end: end dat in "YYYY-MM-DD"
-
-#     :return: Download file from browser.
-#     """
-#     log.info("download initiated")
-#     if selected_data is not None:
-#         points = selected_data["points"]
-#         log.info("points %s", len(points))
-
-#         if len(points) > 0:
-#             ids = [
-#                 i["customdata"]
-#                 for i in points
-#                 if ("customdata" in i) & (i["curveNumber"] != 0)
-#             ]
-#             # remove any points from trace 0, which is not visible
-#             # ids = [i for i in ids if i["curveNumber"] != 0]
-#             # using loc based index for now, should be labeled
-#             # in future to prevent missing data from causing loc
-#             # check to fail
-#             ids = [i[2] for i in ids]
-#             print(f"{ids=}")
-
-#             # df_sub = df_obs[df_obs["id"].isin(ids)]
-#             df_sub = df_obs[df_obs["all.id"].isin(ids)]
-#             df_sub = df_sub.drop(columns=["all.id", "map_latitude", "map_longitude"])
-
-#             filename = f"mros_obs_{start}_{end}.csv"
-
-#             log.info("saving file")
-#             return dcc.send_data_frame(df_sub.to_csv, filename)
-
-#     log.info("must select points to download")
-#     return no_update
-
-
-# @callback(
-#     Output(
-#         "map",
-#         "figure",
-#         allow_duplicate=True,
-#     ),
-#     Input("map", "relayoutData"),
-#     prevent_initial_call=True,
-#     suppress_callback_exceptions=True,
-# )
-# def limit_zoom_level(map_state, traces=4):
-#     """
-#     Detects map zoom level, and hides points when zoom
-#     exceedes a threshold (12.5) A maximum zoom annotation is also
-#     displayed.
-
-#     :param (dict) map_state: dict of current map state, from the figure.
-#         Updates whenever the zoom level or view coordinates change.
-#     :param (int) layers: the number of data traces in the map. This is
-#         required in order to turn off visibility and hoverlabels when
-#         zoom theshold is exceeded. If this number is set incorrectly,
-#         zoom events past the threshold will cause visible errors in
-#         the figure.
-
-#     :return (Dash.Patch): partial property update
-#     """
-#     log.debug(map_state)
-
-#     if len(map_state) > 1:
-#         zoom = map_state["mapbox.zoom"]
-#         # zoom = fig["layout"]["mapbox"]["zoom"]
-#         # print(f"{zoom=}")
-#         patched_fig = Patch()
-
-#         if zoom > 12.5:
-#             for i in range(1, traces):
-#                 patched_fig["data"][i]["marker"]["opacity"] = 0
-#                 patched_fig["layout"]["hovermode"] = False
-#                 patched_fig["layout"]["annotations"] = [
-#                     {
-#                         "font": {"color": "black", "size": 18},
-#                         "showarrow": False,
-#                         "text": "Zoom out to view observations",
-#                         "x": 0.5,
-#                         "xref": "paper",
-#                         "y": 0.5,
-#                         "yref": "paper",
-#                         "yshift": 10,
-#                     }
-#                 ]
-#         else:
-#             for i in range(1, traces):
-#                 patched_fig["data"][i]["marker"]["opacity"] = 1
-#                 patched_fig["layout"]["hovermode"] = True
-#                 del patched_fig["layout"]["annotations"]
-
-#         return patched_fig
-
-#     return no_update
-
-
-# @callback(
-#     Output("selected-points", "children"),
-#     Output("download-data-button", "disabled"),
-#     [Input("map", "selectedData")],
-#     # prevent_initial_call=True,
-# )
-# def display_selected_data(selected_data):
-#     """Show counter with number of selected observations on the nav panel.
-
-#     :param (dict) selectedData: Figure output from plotly.js with selection
-#         data, and other state vars
-#     :returns (str): number of points.
-#     """
-#     print(f"{selected_data=}")
-
-#     if selected_data is not None:
-#         points = selected_data["points"]
-#         if len(points) > 0:
-#             return [f"{len(points)}", False]
-
-#     elif selected_data is None:
-#         return ["None", True]
-
-
-# @callback(
-#     Output("click-modal", "children"),
-#     Output("map", "clickData"),
-#     [Input("map", "clickData")],
-#     prevent_initial_call=True,
-# )
-# def display_click_data(clickData):
-#     """Get information for select point
-
-#     This callback returns a Modal (pop-up) that displays a datatable showing
-#     all available information for selected observation. Currently this
-#     includes all fields, but can be subset.
-
-#     :param clickData (dict): click data from map
-#     :return (tuple): This is a tuple of the modal div element, and secondly,
-#         None. None is used to reset the "clickData" object after the
-#         data table is displayed. Without this, if a user clicks on the
-#         same point twice, the modal will not open!
-#     """
-#     if clickData is not None:
-#         ob_id = clickData["points"][0]["customdata"][1]
-#         print(f"{ob_id=}")
-
-#         # df is melted when called by dbc.Table below
-#         res = df_obs[df_obs["all.id"] == ob_id].iloc[:1]
-#         res.drop(columns=["map_longitude", "map_latitude"], axis=1, inplace=True)
-
-#         return (
-#             html.Div(
-#                 [
-#                     # dbc.Button("Open modal", id="open", n_clicks=0),
-#                     dbc.Modal(
-#                         [
-#                             dbc.ModalHeader(dbc.ModalTitle("Point Data")),
-#                             dbc.ModalBody(
-#                                 [
-#                                     # html.Div("Point Data:"),
-#                                     dbc.Table.from_dataframe(
-#                                         res.melt(),
-#                                         striped=True,
-#                                         bordered=True,
-#                                         hover=True,
-#                                     ),
-#                                 ]
-#                             ),
-#                             # dbc.ModalFooter(
-#                             #     dbc.Button(
-#                             #         "Close", id="close", className="ms-auto", n_clicks=0
-#                             #     )
-#                             # ),
-#                         ],
-#                         id="modal-body-scroll",
-#                         scrollable=True,
-#                         is_open=True,
-#                     ),
-#                 ]
-#             ),
-#             None,
-#         )
-#     else:
-#         return "Click on the map to get data"
-
-
-# @callback(
-#     [
-#         Output("date-picker-range", "start_date"),
-#         Output("date-picker-range", "end_date"),
-#     ],
-#     Input("day-button", "n_clicks"),
-#     Input("week-button", "n_clicks"),
-#     Input("month-button", "n_clicks"),
-#     Input("year-button", "n_clicks"),
-#     # prevent_initial_call=True,
-# )
-# def update_date_picker(day, week, month, year):
-#     """
-#     Callback to update the date range picker with present values
-#     of 1 week, 1 month, and 1 year.
-
-#     :param (str) week: id of week button
-#     :param (str) month: id of month button
-#     :param (str) year: id of year button
-#     :return (list): list with values for start_date and end_date
-#         either datetime object of str of YYYY-MM-DD is accepted.
-#     """
-#     if ctx.triggered_id is None:  # initial condition
-#         # set default date interval on app start
-#         start_date = dt.today() - timedelta(days=8)
-
-#     if "day-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=1)
-
-#     if "week-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=7)
-
-#     if "month-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=31)
-
-#     if "year-button" == ctx.triggered_id:
-#         start_date = dt.today() - timedelta(days=366)
-
-#     return [start_date, dt.today()]
+    return no_update

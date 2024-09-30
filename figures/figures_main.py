@@ -41,6 +41,7 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
     catchment_lats = list(gdf["geometry"][0].exterior.xy[1])
     catchment_lons = list(gdf["geometry"][0].exterior.xy[0])
 
+    # any additional layers must be added AFTER this layer
     fig.add_trace(
         go.Scattermapbox(
             lat=catchment_lats,
@@ -59,8 +60,8 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
             marker=go.scattermapbox.Marker(
                 size=6, color="white"  # You can change the marker color
             ),
-            text=gdf_wells["name"],  # Text labels for each point
-            hoverinfo="text",
+            hovertext=gdf_wells["name"],  # Text labels for each point
+            # hoverinfo="text",
         )
     )
 
