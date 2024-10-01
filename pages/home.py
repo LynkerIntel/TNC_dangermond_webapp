@@ -91,7 +91,7 @@ layout = html.Div(
                         dcc.Loading(
                             parent_className="loading_wrapper",
                             children=[
-                                html.Div(html.H4("Dangermond Preserve")),
+                                # html.Div(html.H4("Dangermond Preserve")),
                                 html.Div(html.P("Model Output Explorer")),
                                 html.Hr(
                                     style={
@@ -293,11 +293,12 @@ layout = html.Div(
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
                     lg=3,
-                    # className="col-9",
-                    style={
-                        "background-color": "white",
-                        "padding": "0 10 0 0",
-                    },
+                    className="ml-3 mt-3",
+                    # style={
+                    #     "background-color": "gray",
+                    #     # "padding": "20 20 20 20",
+                    #     # "margin": "10 10 10 10",
+                    # },
                 ),
                 dbc.Col(
                     html.Div(
@@ -431,7 +432,7 @@ def update_modal_content(click_data):
         layer = click_data["points"][0]["curveNumber"]
         if layer == 2:
             well_name = click_data["points"][0]["hovertext"]
-            #print(well_name)
+            # print(well_name)
             # Extract the clicked polygon information
             # properties = click_data["points"][0]["location"]
             return f"Groundwater Comparison: {well_name}"

@@ -1,6 +1,6 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-from layouts.main_layout import main_layout
+from layouts.header_layout import header_layout
 
 from dash import Dash, html, dcc, Patch, no_update
 import plotly.express as px
@@ -93,9 +93,10 @@ def create_app():
         fluid=True,
         id="root",  # most outer container
         children=[
-            main_layout,
+            header_layout,
             dash.page_container,
         ],
+        style={"padding": "0"},
     )
 
     # return the Dash app
