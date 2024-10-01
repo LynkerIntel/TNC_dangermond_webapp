@@ -53,6 +53,9 @@ ds_ngen = data_loader.ngen_df_to_xr(
     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
 )
 df_q = data_loader.ngen_basin_q()
+df_gw_delta = data_loader.monthly_gw_delta(
+    "/Users/dillonragar/github/TNC_dangermond/station_data/output/gw_monthly_delta"
+)
 
 
 fig = px.line(df_q)
@@ -318,7 +321,9 @@ layout = html.Div(
                             # DBC Modal
                             dbc.Modal(
                                 [
-                                    dbc.ModalHeader(dbc.ModalTitle("Polygon Info")),
+                                    dbc.ModalHeader(
+                                        dbc.ModalTitle(html.P(id="well-name-title"))
+                                    ),
                                     dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalBody(
                                         dcc.Graph(
@@ -415,20 +420,20 @@ def toggle_modal(click_data, n_clicks, is_open):
     return is_open  # Keep modal state unchanged if no click event
 
 
-# # Callback to update modal content based on click_data
-# @callback(
-#     Output("modal-content", "children"),
-#     Input("choropleth-map", "clickData"),
-# )
-# def update_modal_content(click_data):
-#     if click_data:
-#         # print(f"{click_data=}")
-#         layer = click_data["points"][0]["curveNumber"]
-#         # print(f"{layer=}")
-#         # Extract the clicked polygon information
-#         properties = click_data["points"][0]["location"]
-#         return f"Polygon ID: {properties}"
-#     return ""
+# Callback to update modal content based on click_data
+@callback(
+    Output("well-name-title", "children"),
+    Input("choropleth-map", "clickData"),
+)
+def update_modal_content(click_data):
+    if click_data:
+        # print(f"{click_data=}")
+        layer = click_data["points"][0]["curveNumber"]
+        # print(f"{layer=}")
+        # Extract the clicked polygon information
+        properties = click_data["points"][0]["location"]
+        return f"Polygon ID: {properties}"
+    return ""
 
 
 # Callback to update modal content based on clickData (optional if dynamic)
@@ -441,11 +446,13 @@ def toggle_modal(click_data, n_clicks, is_open):
 def update_modal_figure(click_data):
     """Update modal fig"""
     if click_data:
-        # properties = click_data["points"][0]["location"]
-        # You can modify the figure based on the clicked polygon, but for now, it returns the same figure
-
-        fig = px.line(df_q)
-        return fig
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 2:
+            stn_id = click_data["points"][0]["customdata"]
+            # plot first column only
+            fig = px.line(df_gw_delta[stn_id].iloc[:, 0])
+            return fig
+    return no_update
 
 
 @callback(
@@ -479,7 +486,6 @@ def water_balance_figure(id_click):
     # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
     # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
 
-    # # print(fig["data"])
     return fig
 
 
@@ -493,22 +499,13 @@ def higlight_line_segment_on_map(click_data):
     Highlight line segment to make user selection more obvious. This method use linestrings, rather
     than polygons, to provide higlighting around the polygons.
     """
-    print("highlight callback fired")
-
-    # if id_click is None:
-    #     id = 1
-    # else:
-    #     id = id_click["points"][0]["customdata"][0]
-
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
 
         if layer == 0:
             id = click_data["points"][0]["customdata"][0]
-            # country_count = list(df[df.country.isin(countries)].index)
             patched_figure = Patch()
-            # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
-            # patched_figure["data"][0]["line"]["color"] = updated_markers
+
             print(id)
             subset = gdf[gdf["feature_id"] == id]
             print(subset)
@@ -529,13 +526,7 @@ def higlight_line_segment_on_map(click_data):
                 # hovertext=gdf_cat["divide_id"].tolist(),
             )
 
-            # print("new patch data:")
-            # print(data)
-            # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
-            # patched_figure["data"][0] = data
-
             patched_figure["data"][1] = data
-
             return patched_figure
 
     return no_update

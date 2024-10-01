@@ -186,6 +186,28 @@ def ngen_df_to_xr(path):
     return ds
 
 
+def monthly_gw_delta(filepath):
+    """Load monthly goundwater delta
+
+    Parameters:
+    filepath (str): directory with each station delta as Parquet
+
+    Returns:
+    gw_deltas (dict): dict with where k: stn id and v: dataframe
+    """
+    directory = Path(filepath)
+    files = [file for file in directory.rglob("*.parquet") if "monthly" in file.name]
+
+    gw_deltas = {}
+
+    for f in files:
+        df = pd.read_parquet(f)
+        stn_id = df["stn_id_dendra"].iloc[0]
+        gw_deltas[stn_id] = df
+
+    return gw_deltas
+
+
 def get_outline():
     """ """
     gdf = gpd.read_file("./data/tnc.geojson")

@@ -61,6 +61,7 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
                 size=6, color="white"  # You can change the marker color
             ),
             hovertext=gdf_wells["name"],  # Text labels for each point
+            customdata=gdf_wells["station_id_dendra"],
             # hoverinfo="text",
         )
     )
