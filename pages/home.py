@@ -322,7 +322,7 @@ layout = html.Div(
                             dbc.Modal(
                                 [
                                     dbc.ModalHeader(
-                                        dbc.ModalTitle(html.P(id="well-name-title"))
+                                        dbc.ModalTitle(id="well-name-title")
                                     ),
                                     dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalBody(
@@ -429,10 +429,12 @@ def update_modal_content(click_data):
     if click_data:
         # print(f"{click_data=}")
         layer = click_data["points"][0]["curveNumber"]
-        # print(f"{layer=}")
-        # Extract the clicked polygon information
-        properties = click_data["points"][0]["location"]
-        return f"Polygon ID: {properties}"
+        if layer == 2:
+            well_name = click_data["points"][0]["hovertext"]
+            #print(well_name)
+            # Extract the clicked polygon information
+            # properties = click_data["points"][0]["location"]
+            return f"Groundwater Comparison: {well_name}"
     return ""
 
 
