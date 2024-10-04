@@ -153,9 +153,8 @@ def ngen_csv_to_df(path):
     return df_lst, catchments
 
 
-def ngen_df_to_xr(path):
+def ngen_csv_to_xr(path):
     """Method to parse nexgen model outputs"""
-
     # get ngen output as list of dfs and names
     df_lst, cats = ngen_csv_to_df(path)
 
@@ -206,6 +205,12 @@ def monthly_gw_delta(filepath):
         gw_deltas[stn_id] = df
 
     return gw_deltas
+
+
+def natural_flows():
+    return pd.read_parquet(
+        "/Users/dillonragar/Downloads/weighted_natural_flows.parquet"
+    )
 
 
 def get_outline():
