@@ -6,12 +6,12 @@ import json
 import data_loader
 
 
-def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
+def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_lines):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     # get nexgen output to color polygons by
-    colors = ds[display_var].sel(Time="1981-10-01 12:00:00").to_dataframe()
+    colors = ds[display_var].sel(Time="2005-10-01 12:00:00").to_dataframe()
     colors = colors[[display_var]]
 
     gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
@@ -41,7 +41,11 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
     catchment_lats = list(gdf["geometry"][0].exterior.xy[1])
     catchment_lons = list(gdf["geometry"][0].exterior.xy[0])
 
+    # add flowline
+    lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf_lines, id_col="divide_id")
+
     # any additional layers must be added AFTER this layer
+    # this is a placeholder for the active polygon highlight
     fig.add_trace(
         go.Scattermapbox(
             lat=catchment_lats,
@@ -63,6 +67,21 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells):
             hovertext=gdf_wells["name"],  # Text labels for each point
             customdata=gdf_wells["station_id_dendra"],
             # hoverinfo="text",
+        )
+    )
+
+    # add flowlines to map
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=lats,
+            lon=lons,
+            mode="lines",
+            hoverinfo="skip",
+            opacity=1,
+            line=dict(
+                width=1,
+                color="black",
+            ),
         )
     )
 

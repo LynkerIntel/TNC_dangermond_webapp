@@ -30,6 +30,7 @@ import numpy as np
 import os
 import boto3
 import io
+import xarray as xr
 
 import plotly.graph_objects as go
 
@@ -48,14 +49,21 @@ gdf = data_loader.get_local_hydrofabric(layer="divides")
 gdf_outline = data_loader.get_outline()
 gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
 gdf_wells = data_loader.get_local_hydrofabric(layer="wells")
+gdf_lines = data_loader.get_local_hydrofabric(layer="flowpaths")
+
+
 dfs = data_loader.get_s3_cabcm()
-ds_ngen = data_loader.ngen_df_to_xr(
-    "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
+# ds_ngen = data_loader.ngen_csv_to_xr(
+#     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
+# )
+ds_ngen = xr.open_dataset(
+    "/Users/dillonragar/data/tnc/synthetic_data_20241004/synthetic_data.nc"
 )
 df_q = data_loader.ngen_basin_q()
-df_gw_delta = data_loader.monthly_gw_delta(
+gw_delta = data_loader.monthly_gw_delta(
     "/Users/dillonragar/github/TNC_dangermond/station_data/output/gw_monthly_delta"
 )
+df_nf = data_loader.natural_flows()
 
 
 fig = px.line(df_q)
@@ -396,6 +404,7 @@ def mapbox_lines(display_var):
         display_var=display_var,
         ds=ds_ngen,
         gdf_wells=gdf_wells,
+        gdf_lines=gdf_lines,
     )
 
 
@@ -447,14 +456,21 @@ def update_modal_content(click_data):
     # suppress_callback_exceptions=True,
 )
 def update_modal_figure(click_data):
-    """Update modal fig"""
+    """Update modal fig
+
+    TODO: subset well locations on plot to only those with good data
+
+    """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
         if layer == 2:
             stn_id = click_data["points"][0]["customdata"]
-            # plot first column only
-            fig = px.line(df_gw_delta[stn_id].iloc[:, 0])
-            return fig
+            if stn_id in gw_delta:
+                # plot first column only
+                df = gw_delta[stn_id]
+                fig = px.line(df.iloc[:, 0])
+                return fig
+
     return no_update
 
 
@@ -472,8 +488,13 @@ def water_balance_figure(id_click):
     #     id = id_click["points"][0]["customdata"][0]
 
     # df_sub = df_route[df_route["feature_id"] == id]
+    id = id_click["points"][0]["customdata"][0]
+    # loaded natural flows
 
-    fig = px.line(df_q)
+    df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
+    # loaded routed NextGen flows
+
+    fig = px.line(df_nf_cat)
     fig.update_layout(
         # width=100vh,
         # height=100vw,
