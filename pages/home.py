@@ -67,10 +67,11 @@ gw_delta = data_loader.monthly_gw_delta(
     "/Users/dillonragar/github/TNC_dangermond/station_data/output/gw_monthly_delta"
 )
 df_nf = data_loader.natural_flows()
+df_cabcm = data_loader.get_s3_cabcm()
+
 
 # list of catchments in the ngen output data
 cats = ds_ngen["catchment"].to_pandas().to_list()
-
 # fig = px.line(df_q)
 fig = go.Figure()
 
@@ -116,6 +117,7 @@ layout = html.Div(
                                         "opacity": "unset",
                                     }
                                 ),
+                                dcc.Store(id="cat-click-store"),
                                 html.Br(),
                                 # shows selected reach
                                 html.Div(id="contents"),
@@ -519,6 +521,8 @@ def update_modal_figure(click_data):
     """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
+        # print(f"{layer=}")
+        # print(click_data)
         if layer == 3:
             print(f"well click: {click_data}")
             # get stn id from click
@@ -582,65 +586,89 @@ def update_modal_figure(click_data):
 @callback(
     Output("wb_ts_fig", "figure"),
     Input("choropleth-map", "clickData"),
+    Input("variable-dropdown", "value"),
+    State("cat-click-store", "data"),
 )
-def water_balance_figure(id_click):
+def water_balance_figure(id_click, model_var, stored_cat_click):
     """
     Define time series figure locations on map.
     """
-    # if id_click is None:
-    #     id = 2614389
-    # else:
-    #     id = id_click["points"][0]["customdata"][0]
-
-    # df_sub = df_route[df_route["feature_id"] == id]
     if id_click:
-        id = id_click["points"][0]["customdata"][0]
-        # print(f"{cat=}")
+        if model_var == "Q_OUT":
+            id = id_click["points"][0]["customdata"][0]
+            # print(f"{cat=}")
 
-        # load natural flows
-        df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
+            # load natural flows
+            df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
 
-        # subset routed NextGen flows by cat
-        df_ng = pd.DataFrame(
-            ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
-        )
-        # print(f"{df_ng=}")
-
-        fig = px.line(df_nf_cat)
-
-        # plot Q_OUT for catchment
-        fig.add_trace(
-            go.Scatter(
-                x=df_ng.index,
-                y=df_ng.iloc[:, 0],
-                mode="lines",
-                name="Streamflow",
+            # subset routed NextGen flows by cat
+            df_ng = pd.DataFrame(
+                ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
             )
-        )
+            # print(f"{df_ng=}")
 
-        fig.update_layout(
-            # width=100vh,
-            # height=100vw,
-            autosize=True,
-            margin=dict(l=20, r=10, t=45, b=0),
-            # title={"text": f"Catchment - {id}"},
-            title_x=0.5,
-            # uirevision="Don't change",
-            # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-        )
+            fig = px.line(df_nf_cat)
 
-        # add model output discharge
+            # plot Q_OUT for catchment
+            fig.add_trace(
+                go.Scatter(
+                    x=df_ng.index,
+                    y=df_ng.iloc[:, 0],
+                    mode="lines",
+                    name="Streamflow",
+                )
+            )
 
-        fig.update_layout(plot_bgcolor="white")
-        # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-        # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+            fig.update_layout(
+                # width=100vh,
+                # height=100vw,
+                autosize=True,
+                margin=dict(l=20, r=10, t=45, b=0),
+                # title={"text": f"Catchment - {id}"},
+                title_x=0.5,
+                # uirevision="Don't change",
+                # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+            )
 
-        return fig
+            # add model output discharge
+
+            fig.update_layout(plot_bgcolor="white")
+            # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+            # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+
+            return fig
+
+        if model_var == "ACTUAL_ET":
+            # create fig of catchment AET vs. CBACM AET
+            print("plotting AET")
+            print(f"{stored_cat_click=}")
+            # CABCM
+            df_aet = df_cabcm["aet"]
+            df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
+            fig = px.line(df_sub[["value"]])
+
+            # NGEN AET
+            # subset routed NextGen flows by cat
+            df_ng = pd.DataFrame(
+                ds_ngen["ACTUAL_ET"]
+                .sel({"catchment": f"cat-{stored_cat_click[0]}"})
+                .to_pandas()
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df_ng.index,
+                    y=df_ng.iloc[:, 0] * 1000,  # UNIT
+                    mode="lines",
+                    name="NextGen AET",
+                )
+            )
+
+            return fig
 
     # if no catchment is selected, timeseries should be full domain
     else:
         df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
-        df_nf_domain 
         fig = px.line(df_q)
 
         fig.add_trace(
@@ -700,3 +728,18 @@ def higlight_line_segment_on_map(click_data):
             return patched_figure
 
     return no_update
+
+
+@callback(
+    Output("cat-click-store", "data"),
+    Input("choropleth-map", "clickData"),
+)
+def store_catchment_click(click_data):
+    """ """
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        print(f"{layer=}")
+        if layer == 0:
+            cat_id = click_data["points"][0]["customdata"]
+            print(cat_id)
+            return cat_id
