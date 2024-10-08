@@ -11,7 +11,7 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_line
     Primary map with flowpaths within Dangermond Preserve.
     """
     # get nexgen output to color polygons by
-    colors = ds[display_var].sel(Time="2005-10-01 12:00:00").to_dataframe()
+    colors = ds[display_var].sel(Time="2005-10-01").to_dataframe()
     colors = colors[[display_var]]
 
     gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
@@ -56,19 +56,19 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_line
         )
     )
 
-    fig.add_trace(
-        go.Scattermapbox(
-            lat=gdf_wells["lat"],
-            lon=gdf_wells["lon"],
-            mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermapbox.Marker(
-                size=6, color="white"  # You can change the marker color
-            ),
-            hovertext=gdf_wells["name"],  # Text labels for each point
-            customdata=gdf_wells["station_id_dendra"],
-            # hoverinfo="text",
-        )
-    )
+    # fig.add_trace(
+    #     go.Scattermapbox(
+    #         lat=gdf_wells["lat"],
+    #         lon=gdf_wells["lon"],
+    #         mode="markers+text",  # You can also use 'markers' or 'text' alone
+    #         marker=go.scattermapbox.Marker(
+    #             size=6, color="white"  # You can change the marker color
+    #         ),
+    #         hovertext=gdf_wells["name"],  # Text labels for each point
+    #         customdata=gdf_wells["station_id_dendra"],
+    #         # hoverinfo="text",
+    #     )
+    # )
 
     # add flowlines to map
     fig.add_trace(
@@ -83,6 +83,24 @@ def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_line
                 color="black",
             ),
         )
+    )
+
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=gdf_wells["lat"],
+            lon=gdf_wells["lon"],
+            mode="markers+text",  # You can also use 'markers' or 'text' alone
+            marker=go.scattermapbox.Marker(
+                size=6, color="white"  # You can change the marker color
+            ),
+            hovertext=gdf_wells["name"],  # Text labels for each point
+            customdata=gdf_wells["station_id_dendra"],
+            # hoverinfo="text",
+        )
+    )
+
+    fig.update_traces(
+        marker_line_width=0, marker_opacity=0, selector=dict(type="choropleth")
     )
 
     fig.update_layout(
