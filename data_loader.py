@@ -110,12 +110,16 @@ def get_local_hydrofabric(layer):
 def ngen_basin_q():
     """Q from NexGen simulation (and gage obs)"""
     df = pd.read_csv(
-        "/Users/dillonragar/data/tnc/output_2024_09_26/output_sim_obs/sim_obs_24.csv",
+        "/Users/dillonragar/github/tnc_webapp/data/sim_obs_validation.csv",
         index_col="time",
     )
     df.index = pd.to_datetime(df.index)
-    df = df[["sim_flow", "obs_flow"]]
-    return df
+    df = df[["sim_flow"]]
+    # Convert daily streamflow (m³/s) to volume per day (m³/day)
+    df["Simulated Monthly Volume"] = df["sim_flow"] * 86400  # 86400 seconds in a day
+    df = df.resample("MS").sum()
+
+    return df[["Simulated Monthly Volume"]]
 
 
 def get_local_routing():
@@ -216,7 +220,11 @@ def natural_flows():
     df.index = pd.to_datetime(df["date"])
     df["divide_id"] = df["divide_id"].astype(int)
 
-    # Group by 'divide_id' and resample to monthly
+    df["weighted_tnc_flow"] = (
+        df["weighted_tnc_flow"] * 2446.58
+    )  # UNIT: cfs to m^3 per day
+
+    # Group by 'divide_id' and resample to monthly (resuluting in m^3 per month)
     resampled_df = (
         df.groupby("divide_id")
         .resample("MS")

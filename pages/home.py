@@ -62,6 +62,7 @@ ds_ngen = xr.open_dataset(
     "/Users/dillonragar/data/tnc/ngen_validation_20241008_monthly.nc"
 )
 df_q = data_loader.ngen_basin_q()
+
 gw_delta = data_loader.monthly_gw_delta(
     "/Users/dillonragar/github/TNC_dangermond/station_data/output/gw_monthly_delta"
 )
@@ -72,6 +73,7 @@ cats = ds_ngen["catchment"].to_pandas().to_list()
 
 # fig = px.line(df_q)
 fig = go.Figure()
+
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
@@ -153,7 +155,7 @@ layout = html.Div(
                                 #     ],
                                 #     className="d-md-flex mt-1",
                                 # ),
-                                html.Div("Select custom time range:"),
+                                html.Div("Select year and month:"),
                                 # dcc.DatePickerSingle(
                                 #     display_format="YYYY/MM/DD",
                                 #     id="date-picker-range",
@@ -169,7 +171,7 @@ layout = html.Div(
                                         {"label": str(year), "value": year}
                                         for year in range(2000, 2031)
                                     ],
-                                    value=2012,  # default value is the current year
+                                    value=2008,  # default value is the current year
                                     placeholder="Select a year",
                                 ),
                                 # Dropdown for selecting month
@@ -192,7 +194,7 @@ layout = html.Div(
                                     value=1,  # default value is the current month
                                     placeholder="Select a month",
                                 ),
-                                html.Div(id="output-date"),
+                                # html.Div(id="output-date"),
                                 # dbc.FormText("(YYYY/MM/DD)"),
                                 html.Br(),
                                 # html.Br(),
@@ -429,7 +431,7 @@ def update_contents(click_data):
 # Callback 1: Update the selected date and store it in dcc.Store
 @callback(
     [
-        Output("output-date", "children"),
+        # Output("output-date", "children"),
         Output("selected-date-store", "data"),
     ],  # Store the selected date
     [Input("year-dropdown", "value"), Input("month-dropdown", "value")],
@@ -437,8 +439,8 @@ def update_contents(click_data):
 def date_from_year_month(year, month):
     if year and month:
         selected_date = datetime.date(year, month, 1).strftime("%Y-%m-%d")
-        return f"Selected Date: {selected_date}", selected_date
-    return "Please select both year and month.", None
+        return [selected_date]
+    return None
 
 
 # Callback to update map based on selected column
@@ -591,46 +593,66 @@ def water_balance_figure(id_click):
     #     id = id_click["points"][0]["customdata"][0]
 
     # df_sub = df_route[df_route["feature_id"] == id]
-    id = id_click["points"][0]["customdata"][0]
-    # print(f"{cat=}")
+    if id_click:
+        id = id_click["points"][0]["customdata"][0]
+        # print(f"{cat=}")
 
-    # load natural flows
-    df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
+        # load natural flows
+        df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
 
-    # subset routed NextGen flows by cat
-    df_ng = pd.DataFrame(ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas())
-    # print(f"{df_ng=}")
-
-    fig = px.line(df_nf_cat)
-
-    # plot Q_OUT for catchment
-    fig.add_trace(
-        go.Scatter(
-            x=df_ng.index,
-            y=df_ng.iloc[:, 0],
-            mode="lines",
-            name="Streamflow",
+        # subset routed NextGen flows by cat
+        df_ng = pd.DataFrame(
+            ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
         )
-    )
+        # print(f"{df_ng=}")
 
-    fig.update_layout(
-        # width=100vh,
-        # height=100vw,
-        autosize=True,
-        margin=dict(l=20, r=10, t=45, b=0),
-        # title={"text": f"Catchment - {id}"},
-        title_x=0.5,
-        # uirevision="Don't change",
-        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-    )
+        fig = px.line(df_nf_cat)
 
-    # add model output discharge
+        # plot Q_OUT for catchment
+        fig.add_trace(
+            go.Scatter(
+                x=df_ng.index,
+                y=df_ng.iloc[:, 0],
+                mode="lines",
+                name="Streamflow",
+            )
+        )
 
-    fig.update_layout(plot_bgcolor="white")
-    # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-    # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+        fig.update_layout(
+            # width=100vh,
+            # height=100vw,
+            autosize=True,
+            margin=dict(l=20, r=10, t=45, b=0),
+            # title={"text": f"Catchment - {id}"},
+            title_x=0.5,
+            # uirevision="Don't change",
+            # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+        )
 
-    return fig
+        # add model output discharge
+
+        fig.update_layout(plot_bgcolor="white")
+        # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+        # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+
+        return fig
+
+    # if no catchment is selected, timeseries should be full domain
+    else:
+        df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
+        df_nf_domain 
+        fig = px.line(df_q)
+
+        fig.add_trace(
+            go.Scatter(
+                x=df_nf_domain.index,
+                y=df_nf_domain["weighted_tnc_flow"],
+                mode="lines",
+                name="Natural Flows",
+            )
+        )
+
+        return fig
 
 
 @callback(
