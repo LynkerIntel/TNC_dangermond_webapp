@@ -305,6 +305,10 @@ layout = html.Div(
                                 # ),
                                 html.Br(),
                                 html.Div(
+                                    id="comparison-table-container"
+                                ),  # Div to hold the dbc.Table
+                                html.Br(),
+                                html.Div(
                                     [
                                         dbc.Button(
                                             "Download Data",
@@ -430,7 +434,6 @@ def update_contents(click_data):
     )
 
 
-# Callback 1: Update the selected date and store it in dcc.Store
 @callback(
     [
         # Output("output-date", "children"),
@@ -439,6 +442,7 @@ def update_contents(click_data):
     [Input("year-dropdown", "value"), Input("month-dropdown", "value")],
 )
 def date_from_year_month(year, month):
+    """ """
     if year and month:
         selected_date = datetime.date(year, month, 1).strftime("%Y-%m-%d")
         return [selected_date]
@@ -743,3 +747,66 @@ def store_catchment_click(click_data):
             cat_id = click_data["points"][0]["customdata"]
             print(cat_id)
             return cat_id
+
+
+@callback(
+    Output("comparison-table-container", "children"),
+    Input("selected-date-store", "data"),
+)
+def update_table(selected_date):
+    # Convert the selected date into a pandas datetime object
+    selected_date = pd.to_datetime(selected_date)
+
+    # Extract the selected month and year
+    selected_month = selected_date.month
+
+    # Filter the DataFrame to get data for the selected month across all years
+    selected_month_df = df_q[df_q.index.month == selected_month]
+
+    # Get the volume for the selected month (for the specific year)
+    selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
+
+    # Calculate the average volume for that month across all years
+    average_value = selected_month_df["Simulated Monthly Volume"].mean()
+
+    # Calculate the "% of average" for the selected month
+    percent_of_average = (selected_month_value / average_value) * 100
+
+    # Format the data for display
+    formatted_selected_value = f"{selected_month_value:,.0f}"
+    formatted_average_value = f"{average_value:,.0f}"
+    formatted_percent_of_average = f"{percent_of_average:.0f}%"
+
+    # Construct the dbc.Table with a vertical layout
+    table = dbc.Table(
+        # Table header
+        [
+            # Table body with data in vertical layout
+            html.Tbody(
+                [
+                    html.Tr(
+                        [html.Td("Month"), html.Td(selected_date.strftime("%B %Y"))]
+                    ),  # Month Year
+                    html.Tr(
+                        [
+                            html.Td("Monthly Volume (m³)"),
+                            html.Td(formatted_selected_value),
+                        ]
+                    ),  # Selected month value
+                    html.Tr(
+                        [html.Td("Avg Volume (m³)"), html.Td(formatted_average_value)]
+                    ),  # Average value for month
+                    html.Tr(
+                        [html.Td("% of Avg"), html.Td(formatted_percent_of_average)]
+                    ),  # % of average
+                ]
+            )
+        ],
+        bordered=True,  # Add table borders
+        hover=True,  # Enable hover effect
+        striped=True,  # Stripe the rows
+        responsive=True,  # Make table responsive
+        size="sm",  # Small size for a more compact look
+    )
+
+    return table
