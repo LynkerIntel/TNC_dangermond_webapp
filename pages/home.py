@@ -1,5 +1,6 @@
 import dash
 from dash import html
+import datetime
 import io
 import requests
 import dash
@@ -56,8 +57,9 @@ dfs = data_loader.get_s3_cabcm()
 # ds_ngen = data_loader.ngen_csv_to_xr(
 #     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
 # )
+
 ds_ngen = xr.open_dataset(
-    "/Users/dillonragar/data/tnc/synthetic_data_20241004/synthetic_data.nc"
+    "/Users/dillonragar/data/tnc/ngen_validation_20241008_monthly.nc"
 )
 df_q = data_loader.ngen_basin_q()
 gw_delta = data_loader.monthly_gw_delta(
@@ -65,8 +67,11 @@ gw_delta = data_loader.monthly_gw_delta(
 )
 df_nf = data_loader.natural_flows()
 
+# list of catchments in the ngen output data
+cats = ds_ngen["catchment"].to_pandas().to_list()
 
-fig = px.line(df_q)
+# fig = px.line(df_q)
+fig = go.Figure()
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
@@ -149,16 +154,46 @@ layout = html.Div(
                                 #     className="d-md-flex mt-1",
                                 # ),
                                 html.Div("Select custom time range:"),
-                                dcc.DatePickerRange(
-                                    display_format="YYYY/MM/DD",
-                                    id="date-picker-range",
-                                    number_of_months_shown=1,
-                                    month_format="MMM YYYY",
-                                    end_date_placeholder_text="MMM Do, YY",
-                                    style={"zIndex": 1001},
-                                    className="dash-bootstrap",
+                                # dcc.DatePickerSingle(
+                                #     display_format="YYYY/MM/DD",
+                                #     id="date-picker-range",
+                                #     number_of_months_shown=1,
+                                #     month_format="MMM YYYY",
+                                #     # end_date_placeholder_text="MMM Do, YY",
+                                #     style={"zIndex": 1001},
+                                #     className="dash-bootstrap",
+                                # ),
+                                dcc.Dropdown(
+                                    id="year-dropdown",
+                                    options=[
+                                        {"label": str(year), "value": year}
+                                        for year in range(2000, 2031)
+                                    ],
+                                    value=datetime.datetime.now().year,  # default value is the current year
+                                    placeholder="Select a year",
                                 ),
-                                dbc.FormText("(YYYY/MM/DD)"),
+                                # Dropdown for selecting month
+                                dcc.Dropdown(
+                                    id="month-dropdown",
+                                    options=[
+                                        {"label": "January", "value": 1},
+                                        {"label": "February", "value": 2},
+                                        {"label": "March", "value": 3},
+                                        {"label": "April", "value": 4},
+                                        {"label": "May", "value": 5},
+                                        {"label": "June", "value": 6},
+                                        {"label": "July", "value": 7},
+                                        {"label": "August", "value": 8},
+                                        {"label": "September", "value": 9},
+                                        {"label": "October", "value": 10},
+                                        {"label": "November", "value": 11},
+                                        {"label": "December", "value": 12},
+                                    ],
+                                    value=datetime.datetime.now().month,  # default value is the current month
+                                    placeholder="Select a month",
+                                ),
+                                html.Div(id="output-date"),
+                                # dbc.FormText("(YYYY/MM/DD)"),
                                 html.Br(),
                                 # html.Br(),
                                 html.Div(
@@ -192,7 +227,7 @@ layout = html.Div(
                                                 {"label": col, "value": col}
                                                 for col in [
                                                     "SOIL_STORAGE",
-                                                    "INFILTRATION_EXCESS",
+                                                    "ACTUAL_ET",
                                                     "Q_OUT",
                                                 ]
                                             ],
@@ -390,6 +425,18 @@ def update_contents(click_data):
     )
 
 
+# Define the callback to update the output date
+@callback(
+    Output("output-date", "children"),
+    [Input("year-dropdown", "value"), Input("month-dropdown", "value")],
+)
+def date_from_year_month(year, month):
+    if year and month:
+        selected_date = datetime.date(year, month, 1).strftime("%Y-%m-%d")
+        return f"Selected Date: {selected_date}"
+    return "Please select both year and month."
+
+
 # Callback to update map based on selected column
 @callback(Output("choropleth-map", "figure"), [Input("column-dropdown", "value")])
 def mapbox_lines(display_var):
@@ -420,7 +467,7 @@ def toggle_modal(click_data, n_clicks, is_open):
         layer = click_data["points"][0]["curveNumber"]
 
         # set True if well location points have been clicked
-        if (layer == 2) and not is_open:
+        if (layer == 3) and not is_open:
             return True
 
     # If the close button is clicked, close the modal
@@ -439,11 +486,8 @@ def update_modal_content(click_data):
     if click_data:
         # print(f"{click_data=}")
         layer = click_data["points"][0]["curveNumber"]
-        if layer == 2:
+        if layer == 3:
             well_name = click_data["points"][0]["hovertext"]
-            # print(well_name)
-            # Extract the clicked polygon information
-            # properties = click_data["points"][0]["location"]
             return f"Groundwater Comparison: {well_name}"
     return ""
 
@@ -463,15 +507,64 @@ def update_modal_figure(click_data):
     """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
-        if layer == 2:
+        if layer == 3:
+            print(f"well click: {click_data}")
+            # get stn id from click
             stn_id = click_data["points"][0]["customdata"]
-            if stn_id in gw_delta:
-                # plot first column only
-                df = gw_delta[stn_id]
-                fig = px.line(df.iloc[:, 0])
-                return fig
+            # user stn id to look up catchment
+            cat = gdf_wells[gdf_wells["station_id_dendra"] == stn_id][
+                "divide_id"
+            ].values[0]
 
-    return no_update
+            # (1) make sure the stn is within QC-pass set
+            if stn_id in gw_delta:
+                print("stn id pass")
+                # (2) check if cat is valid (model output exists)
+                if cat in cats:
+                    print("catchment modeled pass")
+                    fig = go.Figure()
+
+                    # subset groundwater delta to df
+                    df_delta = pd.DataFrame(gw_delta[stn_id].iloc[:, 0])
+                    # print(f"{df=}")
+                    gw_min_index = df_delta.index.min()
+                    gw_max_index = df_delta.index.max()
+
+                    # subset ngen dataset by cat
+                    df_ng = (
+                        ds_ngen[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
+                        .sel({"catchment": cat})
+                        .to_pandas()
+                    )
+
+                    df_ng = (
+                        df_ng[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
+                        # .resample("1MS")
+                        # .sum()
+                        .truncate(before=gw_min_index, after=gw_max_index)
+                    )
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=df_delta.index,
+                            y=df_delta.iloc[:, 0],
+                            mode="lines",
+                            name="delta distance monthly (meters)",
+                        )
+                    )
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=df_ng.index,
+                            y=df_ng["SOIL_TO_GW_FLUX"],
+                            mode="lines",
+                            name="monthly sum (meters)",
+                        )
+                    )
+                    # fig = px.line(df_ng)
+                    return fig
+
+    return go.Figure()
 
 
 @callback(
@@ -489,10 +582,11 @@ def water_balance_figure(id_click):
 
     # df_sub = df_route[df_route["feature_id"] == id]
     id = id_click["points"][0]["customdata"][0]
-    # loaded natural flows
 
+    # load natural flows
     df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
-    # loaded routed NextGen flows
+
+    # subset routed NextGen flows
 
     fig = px.line(df_nf_cat)
     fig.update_layout(
@@ -505,6 +599,8 @@ def water_balance_figure(id_click):
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
+
+    # add model output discharge
 
     fig.update_layout(plot_bgcolor="white")
     # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
@@ -547,6 +643,10 @@ def higlight_line_segment_on_map(click_data):
                 lon=catchment_lons,
                 mode="lines",
                 hoverinfo="skip",
+                # line=dict(
+                #     width=3,
+                #     color="white",
+                # ),
                 # hovertext=gdf_cat["divide_id"].tolist(),
             )
 
