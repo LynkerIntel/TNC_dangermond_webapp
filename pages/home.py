@@ -169,7 +169,7 @@ layout = html.Div(
                                         {"label": str(year), "value": year}
                                         for year in range(2000, 2031)
                                     ],
-                                    value=datetime.datetime.now().year,  # default value is the current year
+                                    value=2012,  # default value is the current year
                                     placeholder="Select a year",
                                 ),
                                 # Dropdown for selecting month
@@ -189,7 +189,7 @@ layout = html.Div(
                                         {"label": "November", "value": 11},
                                         {"label": "December", "value": 12},
                                     ],
-                                    value=datetime.datetime.now().month,  # default value is the current month
+                                    value=1,  # default value is the current month
                                     placeholder="Select a month",
                                 ),
                                 html.Div(id="output-date"),
@@ -222,7 +222,7 @@ layout = html.Div(
                                             # label_checked_class_name="custom-control-label",
                                         ),
                                         dcc.Dropdown(
-                                            id="column-dropdown",
+                                            id="variable-dropdown",
                                             options=[
                                                 {"label": col, "value": col}
                                                 for col in [
@@ -313,6 +313,7 @@ layout = html.Div(
                                     className="d-grid gap-2",
                                     style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
                                 ),
+                                dcc.Store(id="selected-date-store"),
                                 # html.Br(),
                                 # html.Div(id="click-modal"),
                                 # dcc.Graph(
@@ -407,7 +408,7 @@ def update_contents(click_data):
         layer = click_data["points"][0]["curveNumber"]
         if layer == 0:
             # print("clicked")
-            print(click_data)
+            # print(click_data)
             id = click_data["points"][0]["customdata"][0]
             # dff = df[df["centroid_lat"] == fips]
     else:
@@ -425,25 +426,33 @@ def update_contents(click_data):
     )
 
 
-# Define the callback to update the output date
+# Callback 1: Update the selected date and store it in dcc.Store
 @callback(
-    Output("output-date", "children"),
+    [
+        Output("output-date", "children"),
+        Output("selected-date-store", "data"),
+    ],  # Store the selected date
     [Input("year-dropdown", "value"), Input("month-dropdown", "value")],
 )
 def date_from_year_month(year, month):
     if year and month:
         selected_date = datetime.date(year, month, 1).strftime("%Y-%m-%d")
-        return f"Selected Date: {selected_date}"
-    return "Please select both year and month."
+        return f"Selected Date: {selected_date}", selected_date
+    return "Please select both year and month.", None
 
 
 # Callback to update map based on selected column
-@callback(Output("choropleth-map", "figure"), [Input("column-dropdown", "value")])
-def mapbox_lines(display_var):
+@callback(
+    Output("choropleth-map", "figure"),
+    Input("variable-dropdown", "value"),
+    Input("selected-date-store", "data"),
+)
+def mapbox_lines(display_var, time_click):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     print(display_var)
+    print(time_click)
     return figures_main.mapbox_lines(
         gdf=gdf,
         gdf_outline=gdf_outline,
@@ -452,6 +461,7 @@ def mapbox_lines(display_var):
         ds=ds_ngen,
         gdf_wells=gdf_wells,
         gdf_lines=gdf_lines,
+        time=time_click,
     )
 
 
@@ -582,13 +592,27 @@ def water_balance_figure(id_click):
 
     # df_sub = df_route[df_route["feature_id"] == id]
     id = id_click["points"][0]["customdata"][0]
+    # print(f"{cat=}")
 
     # load natural flows
     df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
 
-    # subset routed NextGen flows
+    # subset routed NextGen flows by cat
+    df_ng = pd.DataFrame(ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas())
+    # print(f"{df_ng=}")
 
     fig = px.line(df_nf_cat)
+
+    # plot Q_OUT for catchment
+    fig.add_trace(
+        go.Scatter(
+            x=df_ng.index,
+            y=df_ng.iloc[:, 0],
+            mode="lines",
+            name="Streamflow",
+        )
+    )
+
     fig.update_layout(
         # width=100vh,
         # height=100vw,
@@ -626,9 +650,9 @@ def higlight_line_segment_on_map(click_data):
             id = click_data["points"][0]["customdata"][0]
             patched_figure = Patch()
 
-            print(id)
+            # print(id)
             subset = gdf[gdf["feature_id"] == id]
-            print(subset)
+            # print(subset)
 
             # if geometry is a LINESTRING
             # catchment_lats = list(subset["geometry"][0].exterior.xy[1])

@@ -6,12 +6,16 @@ import json
 import data_loader
 
 
-def mapbox_lines(gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_lines):
+def mapbox_lines(
+    gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_lines, time
+):
     """
     Primary map with flowpaths within Dangermond Preserve.
     """
     # get nexgen output to color polygons by
-    colors = ds[display_var].sel(Time="2005-10-01").to_dataframe()
+    year_month = time[:7]
+    print(year_month)
+    colors = ds[display_var].sel(Time=year_month).to_dataframe()
     colors = colors[[display_var]]
 
     gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
