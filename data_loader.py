@@ -64,7 +64,7 @@ def get_s3_cabcm():
     for var in model_vars:
         df = pd_read_s3_parquet(
             s3_client=s3,
-            key=f"water_balance/cabcm/{var}.parquet",
+            key=f"water_balance/v2/cabcm/{var}.parquet",
             bucket="tnc-dangermond",
         )
         df.index = pd.to_datetime(df["date"])
