@@ -153,7 +153,7 @@ def ngen_csv_to_df(path):
     return df_lst, catchments
 
 
-def ngen_csv_to_xr(path):
+def ngen_csv_to_xr(path, cats_out=False):
     """Method to parse nexgen model outputs"""
     # get ngen output as list of dfs and names
     df_lst, cats = ngen_csv_to_df(path)
@@ -182,7 +182,11 @@ def ngen_csv_to_xr(path):
 
     # Now, create the final dataset
     ds = xr.Dataset(data_vars)
-    return ds
+
+    if cats_out:
+        return ds, cats
+    else:
+        return ds
 
 
 def monthly_gw_delta(filepath):
@@ -208,9 +212,19 @@ def monthly_gw_delta(filepath):
 
 
 def natural_flows():
-    return pd.read_parquet(
-        "/Users/dillonragar/Downloads/weighted_natural_flows.parquet"
+    df = pd.read_parquet("/Users/dillonragar/Downloads/weighted_natural_flows.parquet")
+    df.index = pd.to_datetime(df["date"])
+    df["divide_id"] = df["divide_id"].astype(int)
+
+    # Group by 'divide_id' and resample to monthly
+    resampled_df = (
+        df.groupby("divide_id")
+        .resample("MS")
+        .agg({"weighted_tnc_flow": "sum"})
+        .reset_index()
     )
+    resampled_df.index = pd.to_datetime(resampled_df.date)
+    return resampled_df[["weighted_tnc_flow", "divide_id"]]
 
 
 def get_outline():
