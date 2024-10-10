@@ -221,7 +221,7 @@ def natural_flows():
     df["divide_id"] = df["divide_id"].astype(int)
 
     df["weighted_tnc_flow"] = (
-        df["weighted_tnc_flow"] * 2446.58
+        df["weighted_tnc_flow"] * 0.0283
     )  # UNIT: cfs to m^3 per day
 
     # Group by 'divide_id' and resample to monthly (resuluting in m^3 per month)
@@ -233,6 +233,23 @@ def natural_flows():
     )
     resampled_df.index = pd.to_datetime(resampled_df.date)
     return resampled_df[["weighted_tnc_flow", "divide_id"]]
+
+
+def read_tnc_domain_q():
+    """
+    Temporary full basin comparison, downloaded from Natural Flows.
+    """
+    df = pd.read_csv(
+        "/Users/dillonragar/data/tnc/flow_17593507_mean_estimated_1982_2023.csv"
+    )
+    df["monthly_vol_m3"] = df["value"] * 73271  # UNIT
+    df["date"] = pd.to_datetime(
+        df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
+    )
+    df.reset_index(inplace=True)
+    df.index = df["date"]
+    df = df[["monthly_vol_m3"]]
+    return df
 
 
 def get_outline():
