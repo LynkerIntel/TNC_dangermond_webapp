@@ -68,6 +68,7 @@ gw_delta = data_loader.monthly_gw_delta(
 )
 df_nf = data_loader.natural_flows()
 df_cabcm = data_loader.get_s3_cabcm()
+tnc_domain_q = data_loader.read_tnc_domain_q()
 
 
 # list of catchments in the ngen output data
@@ -120,7 +121,7 @@ layout = html.Div(
                                 dcc.Store(id="cat-click-store"),
                                 html.Br(),
                                 # shows selected reach
-                                html.Div(id="contents"),
+                                html.Div(id="contents", hidden=True),
                                 #
                                 # html.Div("Buttons"),
                                 # html.Div(
@@ -171,10 +172,11 @@ layout = html.Div(
                                     id="year-dropdown",
                                     options=[
                                         {"label": str(year), "value": year}
-                                        for year in range(2000, 2031)
+                                        for year in range(1983, 2024)
                                     ],
                                     value=2008,  # default value is the current year
                                     placeholder="Select a year",
+                                    className="mb-1",
                                 ),
                                 # Dropdown for selecting month
                                 dcc.Dropdown(
@@ -206,25 +208,33 @@ layout = html.Div(
                                         dbc.Checklist(
                                             options=[
                                                 {
-                                                    "label": "NextGen",
+                                                    "label": "CFE",
                                                     "value": "Rain",
                                                 },
                                                 {
                                                     "label": "LSTM",
                                                     "value": "Snow",
+                                                    "disabled": "True",
+                                                },
+                                                {
+                                                    "label": "LGAR",
+                                                    "value": "Snow",
+                                                    "disabled": "True",
                                                 },
                                             ],
                                             value=["Rain", "Snow"],
                                             id="switches-input",
                                             switch=True,
                                             style={
-                                                "padding": "0rem 0rem 0rem 1.5rem",
+                                                "padding": "0rem 1.5rem 0rem 1.5rem",
                                                 # "color": "pink",
                                             },
                                             # input_style={"color": "pink"},
                                             # input_class_name="custom-checkbox custom-control-input",
                                             # label_checked_class_name="custom-control-label",
                                         ),
+                                        html.Br(),
+                                        dbc.Label("Select Output Variable:"),
                                         dcc.Dropdown(
                                             id="variable-dropdown",
                                             options=[
@@ -304,9 +314,50 @@ layout = html.Div(
                                 #     ]
                                 # ),
                                 html.Br(),
+                                html.Div("Full Basin Statistics:"),
                                 html.Div(
-                                    id="comparison-table-container"
-                                ),  # Div to hold the dbc.Table
+                                    id="comparison-table-container",
+                                    children=[
+                                        dbc.Table(
+                                            html.Tbody(
+                                                [
+                                                    html.Tr(
+                                                        [html.Td("Month"), html.Td("")]
+                                                    ),  # Blank cell for month
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                "Selected Volume (m³)"
+                                                            ),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for selected volume
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("Avg Volume (m³)"),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for average volume
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("% of Avg"),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for % of avg
+                                                ]
+                                            ),
+                                            bordered=True,  # Add table borders
+                                            hover=True,  # Enable hover effect
+                                            striped=True,  # Stripe the rows
+                                            responsive=True,  # Make table responsive
+                                            size="sm",  # Small size for a more compact look
+                                            style={
+                                                "border-radius": "5px",  # Rounded corners
+                                                "overflow": "hidden",  # Ensure borders and rounding apply smoothly
+                                            },
+                                        )
+                                    ],
+                                ),
                                 html.Br(),
                                 html.Div(
                                     [
@@ -429,7 +480,7 @@ def update_contents(click_data):
             #     columns=[{"name": i, "id": i} for i in dff.columns],
             #     data=dff.to_dict(orient="records"),
             # )
-            id
+            1
         ]
     )
 
@@ -569,7 +620,7 @@ def update_modal_figure(click_data):
                             x=df_delta.index,
                             y=df_delta.iloc[:, 0],
                             mode="lines",
-                            name="delta distance monthly (meters)",
+                            name="Groundwater Distance Change (meters)",
                         )
                     )
 
@@ -578,8 +629,21 @@ def update_modal_figure(click_data):
                             x=df_ng.index,
                             y=df_ng["SOIL_TO_GW_FLUX"],
                             mode="lines",
-                            name="monthly sum (meters)",
+                            name="Soil to GW Flux (meters)",
                         )
+                    )
+                    fig.update_layout(
+                        # width=100vh,
+                        # height=100vw,
+                        # autosize=True,
+                        # margin=dict(l=20, r=10, t=45, b=0),
+                        title={
+                            "text": "Monthly Groundwater Elevation Change & Soil To Groundwater Flux"
+                        },
+                        title_x=0.5,
+                        yaxis_title="Monthly Difference (meters)",
+                        # uirevision="Don't change",
+                        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
                     )
                     # fig = px.line(df_ng)
                     return fig
@@ -598,8 +662,9 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
     Define time series figure locations on map.
     """
     if id_click:
+        id = id_click["points"][0]["customdata"][0]
         if model_var == "Q_OUT":
-            id = id_click["points"][0]["customdata"][0]
+            # id = id_click["points"][0]["customdata"][0]
             # print(f"{cat=}")
 
             # load natural flows
@@ -611,7 +676,7 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
             )
             # print(f"{df_ng=}")
 
-            fig = px.line(df_nf_cat)
+            fig = px.line(df_nf_cat, title="test")
 
             # plot Q_OUT for catchment
             fig.add_trace(
@@ -619,7 +684,7 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
                     x=df_ng.index,
                     y=df_ng.iloc[:, 0],
                     mode="lines",
-                    name="Streamflow",
+                    name="CFE Streamflow",
                 )
             )
 
@@ -627,10 +692,11 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
                 # width=100vh,
                 # height=100vw,
                 autosize=True,
-                margin=dict(l=20, r=10, t=45, b=0),
-                # title={"text": f"Catchment - {id}"},
+                # margin=dict(l=20, r=10, t=45, b=0),
+                title={"text": f"Catchment - {id}: Streamflow"},
                 title_x=0.5,
-                # uirevision="Don't change",
+                yaxis_title="m3/s",
+                uirevision="Don't change",
                 # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
             )
 
@@ -649,7 +715,9 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
             # CABCM
             df_aet = df_cabcm["aet"]
             df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
+            df_sub["value"] *= 0.001  # UNIT: mm/month to m/month
             fig = px.line(df_sub[["value"]])
+            fig.update_traces(name="CABCM", showlegend=True)
 
             # NGEN AET
             # subset routed NextGen flows by cat
@@ -662,26 +730,48 @@ def water_balance_figure(id_click, model_var, stored_cat_click):
             fig.add_trace(
                 go.Scatter(
                     x=df_ng.index,
-                    y=df_ng.iloc[:, 0] * 1000,  # UNIT
+                    y=df_ng.iloc[:, 0],  # UNIT
                     mode="lines",
-                    name="NextGen AET",
+                    name="CFE AET",
                 )
+            )
+            fig.update_layout(
+                # width=100vh,
+                # height=100vw,
+                autosize=True,
+                # margin=dict(l=20, r=10, t=45, b=0),
+                title={"text": f"Catchment - {id}: AET"},
+                title_x=0.5,
+                uirevision="Don't change",
+                # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
             )
 
             return fig
 
     # if no catchment is selected, timeseries should be full domain
     else:
-        df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
+        # df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
+
         fig = px.line(df_q)
 
         fig.add_trace(
             go.Scatter(
-                x=df_nf_domain.index,
-                y=df_nf_domain["weighted_tnc_flow"],
+                x=tnc_domain_q.index,
+                y=tnc_domain_q["monthly_vol_m3"],
                 mode="lines",
                 name="Natural Flows",
             )
+        )
+        fig.update_layout(plot_bgcolor="white")
+        fig.update_layout(
+            # width=100vh,
+            # height=100vw,
+            autosize=True,
+            # margin=dict(l=20, r=10, t=45, b=0),
+            title={"text": f"Basin Streamflow (Monthly Volume)"},
+            title_x=0.5,
+            uirevision="Don't change",
+            # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
         )
 
         return fig
@@ -761,13 +851,16 @@ def update_table(selected_date):
     selected_month = selected_date.month
 
     # Filter the DataFrame to get data for the selected month across all years
-    selected_month_df = df_q[df_q.index.month == selected_month]
+    # selected_month_df = df_q[df_q.index.month == selected_month]
+    selected_month_df = tnc_domain_q[tnc_domain_q.index.month == selected_month]
 
     # Get the volume for the selected month (for the specific year)
-    selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
+    # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
+    selected_month_value = tnc_domain_q.loc[selected_date, "monthly_vol_m3"]
 
     # Calculate the average volume for that month across all years
-    average_value = selected_month_df["Simulated Monthly Volume"].mean()
+    # average_value = selected_month_df["Simulated Monthly Volume"].mean()
+    average_value = selected_month_df["monthly_vol_m3"].mean()
 
     # Calculate the "% of average" for the selected month
     percent_of_average = (selected_month_value / average_value) * 100
@@ -807,6 +900,10 @@ def update_table(selected_date):
         striped=True,  # Stripe the rows
         responsive=True,  # Make table responsive
         size="sm",  # Small size for a more compact look
+        style={
+            "border-radius": "5px",  # Rounded corners
+            "overflow": "hidden",  # Ensure borders and rounding apply smoothly
+        },
     )
 
     return table
