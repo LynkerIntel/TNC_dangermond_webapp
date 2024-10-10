@@ -116,6 +116,7 @@ def mapbox_lines(
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
+    fig.layout.uirevision = True
     # print(fig)
     return fig
 
