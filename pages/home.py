@@ -209,20 +209,20 @@ layout = html.Div(
                                             options=[
                                                 {
                                                     "label": "CFE",
-                                                    "value": "Rain",
+                                                    "value": 1,
                                                 },
                                                 {
                                                     "label": "LSTM",
-                                                    "value": "Snow",
+                                                    "value": 2,
                                                     "disabled": "True",
                                                 },
                                                 {
                                                     "label": "LGAR",
-                                                    "value": "Snow",
+                                                    "value": 2,
                                                     "disabled": "True",
                                                 },
                                             ],
-                                            value=["Rain", "Snow"],
+                                            value=[1],
                                             id="switches-input",
                                             switch=True,
                                             style={
@@ -772,6 +772,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             # margin=dict(l=20, r=10, t=45, b=0),
             title={"text": f"Basin Streamflow (Monthly Volume)"},
             title_x=0.5,
+            yaxis_title="Monthly Volume (cubic meters)",
             uirevision="Don't change",
             # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
         )
