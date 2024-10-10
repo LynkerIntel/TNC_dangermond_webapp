@@ -657,96 +657,98 @@ def update_modal_figure(click_data):
     Input("variable-dropdown", "value"),
     State("cat-click-store", "data"),
 )
-def water_balance_figure(id_click, model_var, stored_cat_click):
+def water_balance_figure(click_data, model_var, stored_cat_click):
     """
     Define time series figure locations on map.
     """
-    if id_click:
-        id = id_click["points"][0]["customdata"][0]
-        if model_var == "Q_OUT":
-            # id = id_click["points"][0]["customdata"][0]
-            # print(f"{cat=}")
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 0:  # click must be on polyogn layer
+            id = click_data["points"][0]["customdata"][0]
+            if model_var == "Q_OUT":
+                # id = id_click["points"][0]["customdata"][0]
+                # print(f"{cat=}")
 
-            # load natural flows
-            df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
+                # load natural flows
+                df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
 
-            # subset routed NextGen flows by cat
-            df_ng = pd.DataFrame(
-                ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
-            )
-            # print(f"{df_ng=}")
-
-            fig = px.line(df_nf_cat, title="test")
-
-            # plot Q_OUT for catchment
-            fig.add_trace(
-                go.Scatter(
-                    x=df_ng.index,
-                    y=df_ng.iloc[:, 0],
-                    mode="lines",
-                    name="CFE Streamflow",
+                # subset routed NextGen flows by cat
+                df_ng = pd.DataFrame(
+                    ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
                 )
-            )
+                # print(f"{df_ng=}")
 
-            fig.update_layout(
-                # width=100vh,
-                # height=100vw,
-                autosize=True,
-                # margin=dict(l=20, r=10, t=45, b=0),
-                title={"text": f"Catchment - {id}: Streamflow"},
-                title_x=0.5,
-                yaxis_title="m3/s",
-                uirevision="Don't change",
-                # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-            )
+                fig = px.line(df_nf_cat, title="test")
 
-            # add model output discharge
-
-            fig.update_layout(plot_bgcolor="white")
-            # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-            # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-
-            return fig
-
-        if model_var == "ACTUAL_ET":
-            # create fig of catchment AET vs. CBACM AET
-            print("plotting AET")
-            print(f"{stored_cat_click=}")
-            # CABCM
-            df_aet = df_cabcm["aet"]
-            df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
-            df_sub["value"] *= 0.001  # UNIT: mm/month to m/month
-            fig = px.line(df_sub[["value"]])
-            fig.update_traces(name="CABCM", showlegend=True)
-
-            # NGEN AET
-            # subset routed NextGen flows by cat
-            df_ng = pd.DataFrame(
-                ds_ngen["ACTUAL_ET"]
-                .sel({"catchment": f"cat-{stored_cat_click[0]}"})
-                .to_pandas()
-            )
-
-            fig.add_trace(
-                go.Scatter(
-                    x=df_ng.index,
-                    y=df_ng.iloc[:, 0],  # UNIT
-                    mode="lines",
-                    name="CFE AET",
+                # plot Q_OUT for catchment
+                fig.add_trace(
+                    go.Scatter(
+                        x=df_ng.index,
+                        y=df_ng.iloc[:, 0],
+                        mode="lines",
+                        name="CFE Streamflow",
+                    )
                 )
-            )
-            fig.update_layout(
-                # width=100vh,
-                # height=100vw,
-                autosize=True,
-                # margin=dict(l=20, r=10, t=45, b=0),
-                title={"text": f"Catchment - {id}: AET"},
-                title_x=0.5,
-                uirevision="Don't change",
-                # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-            )
 
-            return fig
+                fig.update_layout(
+                    # width=100vh,
+                    # height=100vw,
+                    autosize=True,
+                    # margin=dict(l=20, r=10, t=45, b=0),
+                    title={"text": f"Catchment - {id}: Streamflow"},
+                    title_x=0.5,
+                    yaxis_title="m3/s",
+                    uirevision="Don't change",
+                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+                )
+
+                # add model output discharge
+
+                fig.update_layout(plot_bgcolor="white")
+                # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+                # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+
+                return fig
+
+            if model_var == "ACTUAL_ET":
+                # create fig of catchment AET vs. CBACM AET
+                print("plotting AET")
+                print(f"{stored_cat_click=}")
+                # CABCM
+                df_aet = df_cabcm["aet"]
+                df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
+                df_sub["value"] *= 0.001  # UNIT: mm/month to m/month
+                fig = px.line(df_sub[["value"]])
+                fig.update_traces(name="CABCM", showlegend=True)
+
+                # NGEN AET
+                # subset routed NextGen flows by cat
+                df_ng = pd.DataFrame(
+                    ds_ngen["ACTUAL_ET"]
+                    .sel({"catchment": f"cat-{stored_cat_click[0]}"})
+                    .to_pandas()
+                )
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=df_ng.index,
+                        y=df_ng.iloc[:, 0],  # UNIT
+                        mode="lines",
+                        name="CFE AET",
+                    )
+                )
+                fig.update_layout(
+                    # width=100vh,
+                    # height=100vw,
+                    autosize=True,
+                    # margin=dict(l=20, r=10, t=45, b=0),
+                    title={"text": f"Catchment - {id}: AET"},
+                    title_x=0.5,
+                    uirevision="Don't change",
+                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+                )
+
+                return fig
 
     # if no catchment is selected, timeseries should be full domain
     else:
