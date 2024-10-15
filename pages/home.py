@@ -388,21 +388,27 @@ layout = html.Div(
                 dbc.Col(
                     html.Div(
                         [
-                            dcc.Graph(
-                                # figure=map_fig,
-                                id="choropleth-map",
-                                style={"height": "40vh"},
-                                # style={"height": "100vh", "width": "100vw"},
-                                config={"displaylogo": False},
-                                # className="flex-fill",
+                            dcc.Loading(
+                                id="loading-spinner-map",
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        id="choropleth-map",
+                                        style={"height": "40vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
                             ),
-                            dcc.Graph(
-                                # figure=wb_ts_fig,
-                                id="wb_ts_fig",
-                                style={"height": "50vh"},
-                                # style={"height": "100vh", "width": "100vw"},
-                                config={"displaylogo": False},
-                                # className="flex-fill",
+                            dcc.Loading(
+                                id="loading-spinner-wb_ts",
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        id="wb_ts_fig",
+                                        style={"height": "50vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
                             ),
                             # DBC Modal
                             dbc.Modal(

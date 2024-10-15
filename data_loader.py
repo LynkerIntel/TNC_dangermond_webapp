@@ -10,6 +10,8 @@ from pathlib import Path
 
 
 class DataLoader:
+    """Load all data resources for TNC webapp."""
+
     def __init__(
         self, bucket_name, s3_resource=None, data_dir="./data/", ngen_output_dir=None
     ):
