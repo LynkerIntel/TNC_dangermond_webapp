@@ -390,6 +390,7 @@ layout = html.Div(
                         [
                             dcc.Loading(
                                 id="loading-spinner-map",
+                                delay_show = 100,
                                 type="default",
                                 children=[
                                     dcc.Graph(
@@ -401,6 +402,7 @@ layout = html.Div(
                             ),
                             dcc.Loading(
                                 id="loading-spinner-wb_ts",
+                                delay_show = 100,
                                 type="default",
                                 children=[
                                     dcc.Graph(
