@@ -46,58 +46,38 @@ dash.register_page(__name__, path="/")
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
-gdf = data_loader.get_local_hydrofabric(layer="divides")
-gdf_outline = data_loader.get_outline()
-gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
-gdf_wells = data_loader.get_local_hydrofabric(layer="wells")
-gdf_lines = data_loader.get_local_hydrofabric(layer="flowpaths")
-
-
-dfs = data_loader.get_s3_cabcm()
-# ds_ngen = data_loader.ngen_csv_to_xr(
-#     "/Users/dillonragar/data/tnc/output_2024_09_26/output_24/"
-# )
-
-ds_ngen = xr.open_dataset(
-    "/Users/dillonragar/data/tnc/ngen_validation_20241008_monthly.nc"
+# note, boto3 will ignore this if local aws credentials exist
+s3 = boto3.resource(
+    "s3",
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
 )
-df_q = data_loader.ngen_basin_q()
 
-gw_delta = data_loader.monthly_gw_delta(
-    "/Users/dillonragar/github/TNC_dangermond/station_data/output/gw_monthly_delta"
+
+data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
+
+gdf_outline = data.get_outline()
+gdf = data.get_local_hydrofabric(layer="divides")
+gdf_wells = data.get_local_hydrofabric(layer="wells")
+gdf_lines = data.get_local_hydrofabric(layer="flowpaths")
+ds_ngen = data.ngen_dashboard_data(
+    key="webapp_resources/ngen_validation_20241008_monthly.nc"
 )
-df_nf = data_loader.natural_flows()
-df_cabcm = data_loader.get_s3_cabcm()
-tnc_domain_q = data_loader.read_tnc_domain_q()
+df_q = data.ngen_basin_q()
+gw_delta = data.monthly_gw_delta(prefix="/webapp_resources/monthly_gw_delta/")
+df_nf = data.natural_flows()
+df_cabcm = data.get_s3_cabcm()
+tnc_domain_q = data.read_tnc_domain_q()
 
 
 # list of catchments in the ngen output data
 cats = ds_ngen["catchment"].to_pandas().to_list()
-# fig = px.line(df_q)
 fig = go.Figure()
 
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 
-
-# def layout():
-#     """
-#     This defines the map layout.
-#     """
-#     # data is loaded here to initialize the map,
-#     # afterwards, all updates are made from a
-#     # callback in application.py
-
-#     # df_obs = pd.read_csv("data/mros_met_geog_2023_09_21_noAKCA.csv")
-#     # df_obs.index = pd.to_datetime(df_obs["datetime_utc"])
-
-#     # remove leading whitespace from df
-#     # df_obs = df_obs.replace(r"^ +| +$", r"", regex=True)
-
-#     fig = figures_main.generate_map(MAPBOX_API_KEY, df_obs)
-
-#     return
 
 layout = html.Div(
     [
@@ -177,7 +157,7 @@ layout = html.Div(
                                     value=2008,  # default value is the current year
                                     placeholder="Select a year",
                                     className="mb-1",
-                                    clearable = False,
+                                    clearable=False,
                                 ),
                                 # Dropdown for selecting month
                                 dcc.Dropdown(
@@ -198,7 +178,7 @@ layout = html.Div(
                                     ],
                                     value=1,  # default value is the current month
                                     placeholder="Select a month",
-                                    clearable = False,
+                                    clearable=False,
                                 ),
                                 # html.Div(id="output-date"),
                                 # dbc.FormText("(YYYY/MM/DD)"),
@@ -517,7 +497,7 @@ def mapbox_lines(display_var, time_click):
     return figures_main.mapbox_lines(
         gdf=gdf,
         gdf_outline=gdf_outline,
-        gdf_cat=gdf_cat,
+        gdf_cat=gdf,
         display_var=display_var,
         ds=ds_ngen,
         gdf_wells=gdf_wells,
