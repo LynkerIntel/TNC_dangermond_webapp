@@ -16,6 +16,7 @@ cached-property==1.5.2
 Cartopy
 cdsspy==1.2.691
 certifi==2024.2.2
+cftime
 charset-normalizer==3.3.2
 click==8.1.7
 click-plugins==1.1.1
