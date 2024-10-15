@@ -177,6 +177,7 @@ layout = html.Div(
                                     value=2008,  # default value is the current year
                                     placeholder="Select a year",
                                     className="mb-1",
+                                    clearable = False,
                                 ),
                                 # Dropdown for selecting month
                                 dcc.Dropdown(
@@ -197,6 +198,7 @@ layout = html.Div(
                                     ],
                                     value=1,  # default value is the current month
                                     placeholder="Select a month",
+                                    clearable = False,
                                 ),
                                 # html.Div(id="output-date"),
                                 # dbc.FormText("(YYYY/MM/DD)"),
@@ -770,7 +772,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             # height=100vw,
             autosize=True,
             # margin=dict(l=20, r=10, t=45, b=0),
-            title={"text": f"Basin Streamflow (Monthly Volume)"},
+            title={"text": f"Full Basin Streamflow (Monthly Volume)"},
             title_x=0.5,
             yaxis_title="Monthly Volume (cubic meters)",
             uirevision="Don't change",

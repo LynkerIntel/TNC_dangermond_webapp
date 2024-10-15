@@ -34,7 +34,7 @@ header_layout = html.Div(
                         dbc.NavItem(
                             dbc.NavLink(
                                 "User Guide",
-                                href="obs",
+                                href="about",
                             ),
                             style={"color": "gray"},
                         )
