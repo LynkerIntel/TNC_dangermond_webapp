@@ -41,7 +41,7 @@ def pd_read_s3_csv(key, bucket, s3_client=None, **args):
 
 def gpd_read_s3_gpk(s3_client, key, bucket, driver="GPKG", **args):
     """
-    read geopandas dataframe from s3 bucket
+    read geopackage from s3 bucket as geopandas df
     """
 
     response = s3_client.meta.client.get_object(Bucket=bucket, Key=key)
@@ -75,16 +75,16 @@ def get_s3_cabcm():
     return all_vars
 
 
-def get_s3_hydrofabric():
-    """
-    get Dangermond hydrofabric
-    """
-    gdf = gpd_read_s3_gpk(
-        bucket="tnc-dangermond", key="refactor_hydrofabric.gpkg", s3_client=s3
-    )
-    # gdf["comid"] = gdf["comid"].astype(int)
-    gdf = gdf.to_crs("EPSG:4326")
-    return gdf
+# def get_s3_hydrofabric():
+#     """
+#     get Dangermond hydrofabric
+#     """
+#     gdf = gpd_read_s3_gpk(
+#         bucket="tnc-dangermond", key="refactor_hydrofabric.gpkg", s3_client=s3
+#     )
+#     # gdf["comid"] = gdf["comid"].astype(int)
+#     gdf = gdf.to_crs("EPSG:4326")
+#     return gdf
 
 
 def get_local_hydrofabric(layer):
@@ -111,14 +111,22 @@ def get_local_hydrofabric(layer):
 
 def ngen_basin_q():
     """Q from NexGen simulation (and gage obs)"""
-    df = pd.read_csv(
-        "/Users/dillonragar/github/tnc_webapp/data/sim_obs_validation.csv",
-        index_col="time",
+    # df = pd.read_csv(
+    #     "/Users/dillonragar/github/tnc_webapp/data/sim_obs_validation.csv",
+    #     index_col="time",
+    # )
+
+    df = pd_read_s3_csv(
+        s3_client=s3,
+        bucket="tnc-dangermond",
+        key="ngen_dr/cfe_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
     )
-    df.index = pd.to_datetime(df.index)
+    df.index = pd.to_datetime(df["time"])
     df = df[["sim_flow"]]
     # Convert daily streamflow (m³/s) to volume per day (m³/day)
-    df["Simulated Monthly Volume"] = df["sim_flow"] * 86400  # 86400 seconds in a day
+    df["Simulated Monthly Volume"] = (
+        df["sim_flow"] * 86400
+    )  # UNIT: 86400 seconds in a day
     df = df.resample("MS").sum()
 
     return df[["Simulated Monthly Volume"]]
