@@ -2,6 +2,8 @@ import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
 from urllib.request import urlopen
+import shapely.geometry
+import numpy as np
 import json
 import data_loader
 
@@ -46,7 +48,7 @@ def mapbox_lines(
     catchment_lons = list(gdf["geometry"][0].exterior.xy[0])
 
     # add flowline
-    lats, lons, names = data_loader.mapbox_line_gdf_fmt(gdf_lines, id_col="divide_id")
+    lats, lons, names = mapbox_line_gdf_fmt(gdf_lines, id_col="divide_id")
 
     # any additional layers must be added AFTER this layer
     # this is a placeholder for the active polygon highlight
@@ -121,26 +123,26 @@ def mapbox_lines(
     return fig
 
 
-# def water_balance_fig(dfs):
-#     """
-#     Define time series figure locations on map.
-#     """
-#     # subset of full vars
-#     model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
+def mapbox_line_gdf_fmt(gdf, id_col="ID"):
+    """ """
+    lats = []
+    lons = []
+    names = []
 
-#     df_all = pd.concat([dfs[i]["fp_1"] for i in model_vars], axis=1)
-#     df_all.columns = model_vars
+    for feature, name in zip(gdf.geometry, gdf[id_col]):
+        if isinstance(feature, shapely.geometry.linestring.LineString):
+            linestrings = [feature]
+        elif isinstance(feature, shapely.geometry.multilinestring.MultiLineString):
+            linestrings = feature.geoms
+        else:
+            continue
+        for linestring in linestrings:
+            x, y = linestring.xy
+            lats = np.append(lats, y)
+            lons = np.append(lons, x)
+            names = np.append(names, [name] * len(y))
+            lats = np.append(lats, None)
+            lons = np.append(lons, None)
+            names = np.append(names, None)
 
-#     fig = px.line(df_all)
-#     fig.update_layout(
-#         # width=100vh,
-#         # height=100vw,
-#         autosize=True,
-#         margin=dict(l=10, r=10, t=10, b=0),
-#         # uirevision="Don't change",
-#         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-#     )
-#     fig.update_layout(plot_bgcolor="white")
-#     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-#     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-#     return fig
+    return lats, lons, names
