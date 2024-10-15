@@ -6,6 +6,7 @@ import io
 import geopandas as gpd
 import shapely.geometry
 import os
+
 from pathlib import Path
 
 
@@ -25,6 +26,7 @@ def pd_read_s3_parquet(key, bucket, s3_client=None, **args):
     """ """
     if s3_client is None:
         s3_client = boto3.client("s3")
+
     obj = s3_client.meta.client.get_object(Bucket=bucket, Key=key)
     return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
 
@@ -122,22 +124,22 @@ def ngen_basin_q():
     return df[["Simulated Monthly Volume"]]
 
 
-def get_local_routing():
-    """
-    temp method for placeholder data
-    """
-    df = pd.read_csv(
-        "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
-    )
-    # create timestamp col
-    df["t0"] = pd.to_datetime(df["t0"])
-    df["time"] = pd.to_timedelta(df["time"])
-    df["timestamp"] = df["t0"] + df["time"]
-    # make index and rm
-    df.index = df["timestamp"]
-    df.drop(columns="timestamp", inplace=True)
+# def get_local_routing():
+#     """
+#     temp method for placeholder data
+#     """
+#     df = pd.read_csv(
+#         "/Users/dillonragar/data/tnc/fake_data/datastream_test/ngen-run/outputs/troute/troute_output_202006150100.csv"
+#     )
+#     # create timestamp col
+#     df["t0"] = pd.to_datetime(df["t0"])
+#     df["time"] = pd.to_timedelta(df["time"])
+#     df["timestamp"] = df["t0"] + df["time"]
+#     # make index and rm
+#     df.index = df["timestamp"]
+#     df.drop(columns="timestamp", inplace=True)
 
-    return df
+#     return df
 
 
 def ngen_csv_to_df(path):
@@ -147,7 +149,6 @@ def ngen_csv_to_df(path):
     path (str): locations in nexgen output with catchment .csv files
     """
     cat_paths = list(Path(path).glob("cat-*.csv"))
-
     catchments = [p.stem for p in cat_paths]
     df_lst = [
         pd.read_csv(p, index_col=["Time"], parse_dates=["Time"]) for p in cat_paths
@@ -189,8 +190,25 @@ def ngen_csv_to_xr(path, cats_out=False):
 
     if cats_out:
         return ds, cats
-    else:
-        return ds
+
+    return ds
+
+
+def ngen_dashboard_data(s3_client, bucket_name, key):
+    """Pulls NetCDF from s3 as xarray object, with data that has been
+    previously reformatted from the raw ngen output to an aggregated
+    format for display on the web app.
+
+    """
+    # using meta.client workaround
+    response = s3_client.meta.client.get_object(Bucket=bucket_name, Key=key)
+    file_stream = io.BytesIO(response["Body"].read())
+
+    ds = xr.open_dataset(
+        file_stream, engine="scipy"
+    )  # only works with "scipy" engine as of testing, for file
+    # produce by xarray 2024.7.0
+    return ds
 
 
 def monthly_gw_delta(filepath):
@@ -216,7 +234,16 @@ def monthly_gw_delta(filepath):
 
 
 def natural_flows():
-    df = pd.read_parquet("/Users/dillonragar/Downloads/weighted_natural_flows.parquet")
+    """
+    s3 now.
+    """
+    # df = pd.read_parquet("/Users/dillonragar/Downloads/weighted_natural_flows.parquet")
+    df = pd_read_s3_parquet(
+        bucket="tnc-dangermond",
+        key="water_balance/tnc/weighted_natural_flows.parquet",
+        s3_client=s3,
+    )
+
     df.index = pd.to_datetime(df["date"])
     df["divide_id"] = df["divide_id"].astype(int)
 
@@ -224,7 +251,7 @@ def natural_flows():
         df["weighted_tnc_flow"] * 0.0283
     )  # UNIT: cfs to m^3 per day
 
-    # Group by 'divide_id' and resample to monthly (resuluting in m^3 per month)
+    # UNIT: Group by 'divide_id' and resample to monthly (resuluting in m^3 per month)
     resampled_df = (
         df.groupby("divide_id")
         .resample("MS")
@@ -237,11 +264,19 @@ def natural_flows():
 
 def read_tnc_domain_q():
     """
+    s3
+
     Temporary full basin comparison, downloaded from Natural Flows.
     """
-    df = pd.read_csv(
-        "/Users/dillonragar/data/tnc/flow_17593507_mean_estimated_1982_2023.csv"
+    # df = pd.read_csv(
+    #     "/Users/dillonragar/data/tnc/flow_17593507_mean_estimated_1982_2023.csv"
+    # )
+    df = pd_read_s3_csv(
+        bucket="tnc-dangermond",
+        key="webapp_resources/flow_17593507_mean_estimated_1982_2023.csv",
+        s3_client=s3,
     )
+
     df["monthly_vol_m3"] = df["value"] * 73271  # UNIT
     df["date"] = pd.to_datetime(
         df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
