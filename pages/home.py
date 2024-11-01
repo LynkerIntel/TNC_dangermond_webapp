@@ -390,7 +390,7 @@ layout = html.Div(
                         [
                             dcc.Loading(
                                 id="loading-spinner-map",
-                                delay_show = 100,
+                                delay_show=100,
                                 type="default",
                                 children=[
                                     dcc.Graph(
@@ -402,7 +402,7 @@ layout = html.Div(
                             ),
                             dcc.Loading(
                                 id="loading-spinner-wb_ts",
-                                delay_show = 100,
+                                delay_show=100,
                                 type="default",
                                 children=[
                                     dcc.Graph(
@@ -704,6 +704,12 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 # create fig of catchment AET vs. CBACM AET
                 print("plotting AET")
                 print(f"{stored_cat_click=}")
+
+                # if no basin has been selected previously,
+                # use current click callback.
+                if not stored_cat_click:
+                    stored_cat_click = [id]
+
                 # CABCM
                 df_aet = df_cabcm["aet"]
                 df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
@@ -712,7 +718,6 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 fig.update_traces(name="CABCM", showlegend=True)
 
                 # NGEN AET
-                # subset routed NextGen flows by cat
                 df_ng = pd.DataFrame(
                     ds_ngen["ACTUAL_ET"]
                     .sel({"catchment": f"cat-{stored_cat_click[0]}"})
@@ -728,6 +733,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                     )
                 )
                 fig.update_layout(
+                    yaxis_title="millimeters",
                     # width=100vh,
                     # height=100vw,
                     autosize=True,
@@ -735,7 +741,13 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                     title={"text": f"Catchment - {id}: AET"},
                     title_x=0.5,
                     uirevision="Don't change",
+                    # yaxis_title = "millimeters",
+                    # y_label="test",
                     # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+                )
+
+                fig.update_layout(
+                    yaxis_title="millimeters",
                 )
 
                 return fig
