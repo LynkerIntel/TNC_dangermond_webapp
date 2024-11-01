@@ -713,15 +713,17 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 # CABCM
                 df_aet = df_cabcm["aet"]
                 df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
-                df_sub["value"] *= 0.001  # UNIT: mm/month to m/month
                 fig = px.line(df_sub[["value"]])
                 fig.update_traces(name="CABCM", showlegend=True)
 
                 # NGEN AET
-                df_ng = pd.DataFrame(
-                    ds_ngen["ACTUAL_ET"]
-                    .sel({"catchment": f"cat-{stored_cat_click[0]}"})
-                    .to_pandas()
+                df_ng = (
+                    pd.DataFrame(
+                        ds_ngen["ACTUAL_ET"]
+                        .sel({"catchment": f"cat-{stored_cat_click[0]}"})
+                        .to_pandas()
+                    )
+                    * 1000  # UNIT: m/month to mm/month
                 )
 
                 fig.add_trace(

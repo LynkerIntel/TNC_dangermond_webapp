@@ -49,6 +49,11 @@ class DataLoader:
         """
         Load California Basin Characterization Model summarization from S3.
 
+        Frequency: Month
+
+        UNITS:
+        AET - mm/month
+
         Returns:
             dict: Dictionary of pd.DataFrame for each variable.
         """
@@ -131,6 +136,11 @@ class DataLoader:
     def ngen_csv_to_xr(self, path=None, cats_out=False):
         """
         Parses NGen model outputs into an xarray Dataset.
+
+        Frequency: Month
+
+        UNITS:
+        AET - meters / month
 
         Args:
             path (str, optional): Path to NGen output CSV files.
