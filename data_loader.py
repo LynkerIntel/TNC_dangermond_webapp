@@ -10,11 +10,54 @@ from pathlib import Path
 
 
 class DataLoader:
-    """Load all data resources for TNC webapp."""
+    """A class for managing and loading data resources for the TNC web application.
+
+    Data Attributes:
+    ----------
+        gdf_outline : geopandas.GeoDataFrame
+            Geospatial outline of the region.
+        gdf : geopandas.GeoDataFrame
+            Hydrofabric data for catchment divides.
+        gdf_wells : geopandas.GeoDataFrame
+            Hydrofabric data for wells.
+        gdf_lines : geopandas.GeoDataFrame
+            Hydrofabric data for flow paths.
+        df_nf : pandas.DataFrame
+            Weighted natural flows dataset.
+        df_cabcm : dict
+            Dictionary of California Basin Characterization Model (CABCM) datasets.
+        tnc_domain_q : pandas.DataFrame
+            Basin comparison dataset with monthly flow volumes.
+        df_q : pandas.DataFrame
+            Simulated monthly volume from NGen.
+        ds_ngen : xarray.Dataset
+            NGen validation data formatted for dashboard use.
+        gw_delta : dict
+            Monthly groundwater delta data.
+    """
 
     def __init__(
-        self, bucket_name, s3_resource=None, data_dir="./data/", ngen_output_dir=None
+        self,
+        bucket_name: str,
+        s3_resource: bool = None,
+        data_dir: str = "./data/",
+        ngen_output_dir: str = None,
     ):
+        """Load all datasets necessary to run the webapp.
+
+        Typical runtime should be 3-5 seconds, depending on network speed.
+
+        Parameters:
+        ----------
+        bucket_name : str
+            Name of the S3 bucket to access.
+        s3_resource : boto3.resource
+            AWS S3 resource object for accessing bucket data. Defaults to None.
+        data_dir : str
+            Local directory path for loading static datasets. Defaults to "./data/".
+        ngen_output_dir : str
+            Path to NGen simulation outputs. Defaults to None.
+        """
         self.bucket_name = bucket_name
         self.data_dir = data_dir
         self.ngen_output_dir = ngen_output_dir
@@ -29,6 +72,23 @@ class DataLoader:
             self.s3_resource = s3_resource
 
         self.s3_client = self.s3_resource.meta.client
+
+        # Load all webapp datasets during initialization
+        self.gdf_outline = self.get_outline()
+        self.gdf = self.get_local_hydrofabric(layer="divides")
+        self.gdf_wells = self.get_local_hydrofabric(layer="wells")
+        self.gdf_lines = self.get_local_hydrofabric(layer="flowpaths")
+        self.df_nf = self.natural_flows()
+        self.df_cabcm = self.get_s3_cabcm()
+        self.tnc_domain_q = self.read_tnc_domain_q()
+        self.df_q = self.ngen_basin_q()
+
+        self.ds_ngen = self.ngen_dashboard_data(
+            key="webapp_resources/ngen_validation_20241008_monthly.nc"
+        )
+        self.gw_delta = self.monthly_gw_delta(
+            prefix="webapp_resources/monthly_gw_delta/"
+        )
 
     def pd_read_s3_parquet(self, key, **args):
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
@@ -45,7 +105,7 @@ class DataLoader:
             gdf = gpd.read_file(src, driver=driver)
         return gdf
 
-    def get_s3_cabcm(self):
+    def get_s3_cabcm(self) -> dict[pd.DataFrame]:
         """
         Load California Basin Characterization Model summarization from S3.
 
@@ -69,7 +129,7 @@ class DataLoader:
 
         return all_vars
 
-    def get_local_hydrofabric(self, layer):
+    def get_local_hydrofabric(self, layer: str) -> gpd.GeoDataFrame:
         """
         Read from data directory.
 
@@ -93,7 +153,7 @@ class DataLoader:
 
         return gdf
 
-    def ngen_basin_q(self):
+    def ngen_basin_q(self) -> pd.DataFrame:
         """
         Load Q from NGen simulation (and gauge observations).
 
@@ -113,7 +173,10 @@ class DataLoader:
 
         return df[["Simulated Monthly Volume"]]
 
-    def ngen_csv_to_df(self, path=None):
+    def ngen_csv_to_df(
+        self,
+        path: str = None,
+    ) -> tuple[list[pd.DataFrame], list[str]]:
         """
         Loads NGen CSV outputs.
 
@@ -133,7 +196,11 @@ class DataLoader:
 
         return df_lst, catchments
 
-    def ngen_csv_to_xr(self, path=None, cats_out=False):
+    def ngen_csv_to_xr(
+        self,
+        path: str = None,
+        cats_out: bool = False,
+    ) -> xr.Dataset | tuple[xr.Dataset, list]:
         """
         Parses NGen model outputs into an xarray Dataset.
 
@@ -179,7 +246,7 @@ class DataLoader:
 
         return ds
 
-    def ngen_dashboard_data(self, key):
+    def ngen_dashboard_data(self, key: str) -> xr.Dataset:
         """
         Pulls NetCDF from S3 as an xarray Dataset, formatted for the web app.
 
@@ -195,7 +262,7 @@ class DataLoader:
         ds = xr.open_dataset(file_stream, engine="scipy")
         return ds
 
-    def monthly_gw_delta(self, prefix):
+    def monthly_gw_delta(self, prefix: str) -> dict[str, pd.DataFrame]:
         """
         Reads a directory of Parquet files from S3 into a dictionary of DataFrames.
 
@@ -210,6 +277,7 @@ class DataLoader:
 
         for obj in bucket.objects.filter(Prefix=prefix):
             key = obj.key
+            # print(key)
             if key.endswith(".parquet"):
                 obj_body = obj.get()["Body"].read()
                 parquet_buffer = io.BytesIO(obj_body)
@@ -219,7 +287,7 @@ class DataLoader:
 
         return parquet_dfs
 
-    def natural_flows(self):
+    def natural_flows(self) -> pd.DataFrame:
         """
         Loads natural flows data from S3.
 
@@ -246,7 +314,7 @@ class DataLoader:
         resampled_df.index = pd.to_datetime(resampled_df.date)
         return resampled_df[["weighted_tnc_flow", "divide_id"]]
 
-    def read_tnc_domain_q(self):
+    def read_tnc_domain_q(self) -> pd.DataFrame:
         """
         Loads temporary full basin comparison data from S3.
 
@@ -266,7 +334,7 @@ class DataLoader:
         df = df[["monthly_vol_m3"]]
         return df
 
-    def get_outline(self):
+    def get_outline(self) -> gpd.GeoDataFrame:
         """
         Reads the outline data from the data directory.
 

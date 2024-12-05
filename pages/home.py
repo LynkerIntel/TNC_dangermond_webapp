@@ -56,22 +56,22 @@ s3 = boto3.resource(
 
 data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
 
-gdf_outline = data.get_outline()
-gdf = data.get_local_hydrofabric(layer="divides")
-gdf_wells = data.get_local_hydrofabric(layer="wells")
-gdf_lines = data.get_local_hydrofabric(layer="flowpaths")
-ds_ngen = data.ngen_dashboard_data(
-    key="webapp_resources/ngen_validation_20241008_monthly.nc"
-)
-df_q = data.ngen_basin_q()
-gw_delta = data.monthly_gw_delta(prefix="/webapp_resources/monthly_gw_delta/")
-df_nf = data.natural_flows()
-df_cabcm = data.get_s3_cabcm()
-tnc_domain_q = data.read_tnc_domain_q()
+# gdf_outline = data.get_outline()
+# gdf = data.get_local_hydrofabric(layer="divides")
+# gdf_wells = data.get_local_hydrofabric(layer="wells")
+# gdf_lines = data.get_local_hydrofabric(layer="flowpaths")
+# ds_ngen = data.ngen_dashboard_data(
+#     key="webapp_resources/ngen_validation_20241008_monthly.nc"
+# )
+# df_q = data.ngen_basin_q()
+# gw_delta = data.monthly_gw_delta(prefix="webapp_resources/monthly_gw_delta/")
+# df_nf = data.natural_flows()
+# df_cabcm = data.get_s3_cabcm()
+# tnc_domain_q = data.read_tnc_domain_q()
 
 
 # list of catchments in the ngen output data
-cats = ds_ngen["catchment"].to_pandas().to_list()
+cats = data.ds_ngen["catchment"].to_pandas().to_list()
 fig = go.Figure()
 
 
@@ -233,70 +233,8 @@ layout = html.Div(
                                     # className="custom-control custom-switch",
                                     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
                                 ),
-                                # html.Br(),
-                                # dbc.Label("Select Bounds:"),
-                                # html.Div(
-                                #     [
-                                #         # html.P("Minimum Elevation"),
-                                #         dbc.Input(
-                                #             id="input-elev-min",
-                                #             # debounce=True,
-                                #             type="number",
-                                #             # min=0,
-                                #             # max=5000,
-                                #             step=1,
-                                #             placeholder="Minimum",
-                                #         ),
-                                #     ],
-                                #     # id="min-elev",
-                                #     className="mb-2",
-                                # ),
-                                # html.Div(
-                                #     [
-                                #         # html.P("Maximum Elevation"),
-                                #         dbc.Input(
-                                #             # debounce=True,
-                                #             id="input-elev-max",
-                                #             type="number",
-                                #             min=0,
-                                #             max=5000,
-                                #             step=1,
-                                #             placeholder="Maximum",
-                                #         ),
-                                #         dbc.FormText("unit: meters"),
-                                #     ],
-                                #     # id="max-elev",
-                                # ),
-                                # html.Br(),
-                                # html.Hr(
-                                #     style={
-                                #         "borderWidth": "1px",
-                                #         "width": "100%",
-                                #         # "borderColor": "#AB87FF",
-                                #         "opacity": "unset",
-                                #     }
-                                # ),
-                                # dbc.Row(
-                                #     [
-                                #         html.H6(
-                                #             [
-                                #                 "Selections:",
-                                #                 dbc.Badge(
-                                #                     "None",
-                                #                     id="selected-points",
-                                #                     className="ms-1",
-                                #                 ),
-                                #                 dbc.Tooltip(
-                                #                     "Use the selection tools (Lasso or Box) in the upper right corner to select observations. \
-                                #                 To remove selection: double click outside of the selection area",
-                                #                     target="selected-points",
-                                #                 ),
-                                #             ]
-                                #         ),
-                                #     ]
-                                # ),
                                 html.Br(),
-                                html.Div("Full Basin Statistics:"),
+                                html.Div("Full Domain Statistics:"),
                                 html.Div(
                                     id="comparison-table-container",
                                     children=[
@@ -503,13 +441,13 @@ def mapbox_lines(display_var, time_click):
     print(display_var)
     print(time_click)
     return figures_main.mapbox_lines(
-        gdf=gdf,
-        gdf_outline=gdf_outline,
-        gdf_cat=gdf,
+        gdf=data.gdf,
+        gdf_outline=data.gdf_outline,
+        gdf_cat=data.gdf,
         display_var=display_var,
-        ds=ds_ngen,
-        gdf_wells=gdf_wells,
-        gdf_lines=gdf_lines,
+        ds=data.ds_ngen,
+        gdf_wells=data.gdf_wells,
+        gdf_lines=data.gdf_lines,
         time=time_click,
     )
 
@@ -572,13 +510,15 @@ def update_modal_figure(click_data):
             print(f"well click: {click_data}")
             # get stn id from click
             stn_id = click_data["points"][0]["customdata"]
+            print(f"{stn_id=}")
             # user stn id to look up catchment
-            cat = gdf_wells[gdf_wells["station_id_dendra"] == stn_id][
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
                 "divide_id"
             ].values[0]
+            print(f"{cat=}")
 
             # (1) make sure the stn is within QC-pass set
-            if stn_id in gw_delta:
+            if stn_id in data.gw_delta:
                 print("stn id pass")
                 # (2) check if cat is valid (model output exists)
                 if cat in cats:
@@ -586,14 +526,14 @@ def update_modal_figure(click_data):
                     fig = go.Figure()
 
                     # subset groundwater delta to df
-                    df_delta = pd.DataFrame(gw_delta[stn_id].iloc[:, 0])
+                    df_delta = pd.DataFrame(data.gw_delta[stn_id].iloc[:, 0])
                     # print(f"{df=}")
                     gw_min_index = df_delta.index.min()
                     gw_max_index = df_delta.index.max()
 
                     # subset ngen dataset by cat
                     df_ng = (
-                        ds_ngen[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
+                        data.ds_ngen[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
                         .sel({"catchment": cat})
                         .to_pandas()
                     )
@@ -660,11 +600,13 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 # print(f"{cat=}")
 
                 # load natural flows
-                df_nf_cat = df_nf[df_nf["divide_id"] == id][["weighted_tnc_flow"]]
+                df_nf_cat = data.df_nf[data.df_nf["divide_id"] == id][
+                    ["weighted_tnc_flow"]
+                ]
 
                 # subset routed NextGen flows by cat
                 df_ng = pd.DataFrame(
-                    ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
+                    data.ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
                 )
                 # print(f"{df_ng=}")
 
@@ -711,7 +653,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                     stored_cat_click = [id]
 
                 # CABCM
-                df_aet = df_cabcm["aet"]
+                df_aet = data.df_cabcm["aet"]
                 df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
                 fig = px.line(df_sub[["value"]])
                 fig.update_traces(name="CABCM", showlegend=True)
@@ -719,7 +661,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 # NGEN AET
                 df_ng = (
                     pd.DataFrame(
-                        ds_ngen["ACTUAL_ET"]
+                        data.ds_ngen["ACTUAL_ET"]
                         .sel({"catchment": f"cat-{stored_cat_click[0]}"})
                         .to_pandas()
                     )
@@ -758,12 +700,12 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
     else:
         # df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
 
-        fig = px.line(df_q)
+        fig = px.line(data.df_q)
 
         fig.add_trace(
             go.Scatter(
-                x=tnc_domain_q.index,
-                y=tnc_domain_q["monthly_vol_m3"],
+                x=data.tnc_domain_q.index,
+                y=data.tnc_domain_q["monthly_vol_m3"],
                 mode="lines",
                 name="Natural Flows",
             )
@@ -802,7 +744,7 @@ def higlight_line_segment_on_map(click_data):
             patched_figure = Patch()
 
             # print(id)
-            subset = gdf[gdf["feature_id"] == id]
+            subset = data.gdf[data.gdf["feature_id"] == id]
             # print(subset)
 
             # if geometry is a LINESTRING
@@ -813,7 +755,7 @@ def higlight_line_segment_on_map(click_data):
             catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
             catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
 
-            data = go.Scattermapbox(
+            fig_data = go.Scattermapbox(
                 lat=catchment_lats,
                 lon=catchment_lons,
                 mode="lines",
@@ -825,7 +767,7 @@ def higlight_line_segment_on_map(click_data):
                 # hovertext=gdf_cat["divide_id"].tolist(),
             )
 
-            patched_figure["data"][1] = data
+            patched_figure["data"][1] = fig_data
             return patched_figure
 
     return no_update
@@ -859,11 +801,13 @@ def update_table(selected_date):
 
     # Filter the DataFrame to get data for the selected month across all years
     # selected_month_df = df_q[df_q.index.month == selected_month]
-    selected_month_df = tnc_domain_q[tnc_domain_q.index.month == selected_month]
+    selected_month_df = data.tnc_domain_q[
+        data.tnc_domain_q.index.month == selected_month
+    ]
 
     # Get the volume for the selected month (for the specific year)
     # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
-    selected_month_value = tnc_domain_q.loc[selected_date, "monthly_vol_m3"]
+    selected_month_value = data.tnc_domain_q.loc[selected_date, "monthly_vol_m3"]
 
     # Calculate the average volume for that month across all years
     # average_value = selected_month_df["Simulated Monthly Volume"].mean()
