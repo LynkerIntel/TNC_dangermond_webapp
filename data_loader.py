@@ -81,7 +81,8 @@ class DataLoader:
         self.df_nf = self.natural_flows()
         self.df_cabcm = self.get_s3_cabcm()
         self.tnc_domain_q = self.read_tnc_domain_q()
-        self.df_q = self.ngen_basin_q()
+        self.cfe_q = self.cfe_basin_q()
+        self.lgar_q = self.lgar_basin_q()
 
         self.ds_ngen = self.ngen_dashboard_data(
             key="webapp_resources/ngen_validation_20241008_monthly.nc"
@@ -153,9 +154,9 @@ class DataLoader:
 
         return gdf
 
-    def ngen_basin_q(self) -> pd.DataFrame:
+    def cfe_basin_q(self) -> pd.DataFrame:
         """
-        Load Q from NGen simulation (and gauge observations).
+        Load CFE Q from NGen simulation (and gauge observations).
 
         Returns:
             DataFrame: Simulated monthly volume.
@@ -167,7 +168,27 @@ class DataLoader:
         df = df[["sim_flow"]]
         # Convert daily streamflow (m³/s) to volume per day (m³/day)
         df["Simulated Monthly Volume"] = (
-            df["sim_flow"] * 86400
+            df["sim_flow"] * 86400  # UNIT
+        )  # 86400 seconds in a day
+        df = df.resample("MS").sum()
+
+        return df[["Simulated Monthly Volume"]]
+
+    def lgar_basin_q(self) -> pd.DataFrame:
+        """
+        Load LGAR Q from NGen simulation (and gauge observations).
+
+        Returns:
+            DataFrame: Simulated monthly volume.
+        """
+        df = self.pd_read_s3_csv(
+            key="ngen_dr/lgar_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
+        )
+        df.index = pd.to_datetime(df["time"])
+        df = df[["sim_flow"]]
+        # Convert daily streamflow (m³/s) to volume per day (m³/day)
+        df["Simulated Monthly Volume"] = (
+            df["sim_flow"] * 86400  # UNIT
         )  # 86400 seconds in a day
         df = df.resample("MS").sum()
 
@@ -301,7 +322,7 @@ class DataLoader:
         df.index = pd.to_datetime(df["date"])
         df["divide_id"] = df["divide_id"].astype(int)
         df["weighted_tnc_flow"] = (
-            df["weighted_tnc_flow"] * 0.0283
+            df["weighted_tnc_flow"] * 0.0283  # UNIT
         )  # Convert cfs to m³/day
 
         # Group by 'divide_id' and resample to monthly (resulting in m³ per month)
@@ -325,7 +346,7 @@ class DataLoader:
             key="webapp_resources/flow_17593507_mean_estimated_1982_2023.csv",
         )
 
-        df["monthly_vol_m3"] = df["value"] * 73271
+        df["monthly_vol_m3"] = df["value"] * 73271  # UNIT
         df["date"] = pd.to_datetime(
             df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
         )
