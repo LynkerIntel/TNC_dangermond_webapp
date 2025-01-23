@@ -83,7 +83,6 @@ class DataLoader:
         self.terraclim = self.get_s3_terraclim()
         self.tnc_domain_q = self.read_tnc_domain_q()
         self.cfe_q = self.cfe_basin_q()
-        # self.lgar_q = self.lgar_basin_q()
 
         self.ds_ngen = self.ngen_dashboard_data(
             key="webapp_resources/ngen_validation_20241008_monthly.nc"
@@ -136,7 +135,7 @@ class DataLoader:
         """
         Load Terraclim. This is the historic water balance (Terraclim component).
 
-        Frequency:
+        Frequency: Monthly
 
         UNITS:
 
@@ -167,6 +166,7 @@ class DataLoader:
                 key=f"water_balance/v2/terraclim/{var}.parquet",
             )
             df.index = pd.to_datetime(df["date"])
+            df.drop(columns={"date"}, inplace=True)
             all_vars[var] = df
 
         return all_vars
@@ -214,26 +214,6 @@ class DataLoader:
         df = df.resample("MS").sum()
 
         return df[["Simulated Monthly Volume"]]
-
-    # def lgar_basin_q(self) -> pd.DataFrame:
-    #     """
-    #     Load LGAR Q from NGen simulation (and gauge observations).
-
-    #     Returns:
-    #         DataFrame: Simulated monthly volume.
-    #     """
-    #     df = self.pd_read_s3_csv(
-    #         key="ngen_dr/lgar_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
-    #     )
-    #     df.index = pd.to_datetime(df["time"])
-    #     df = df[["sim_flow"]]
-    #     # Convert daily streamflow (m³/s) to volume per day (m³/day)
-    #     df["Simulated Monthly Volume"] = (
-    #         df["sim_flow"] * 86400  # UNIT
-    #     )  # 86400 seconds in a day
-    #     df = df.resample("MS").sum()
-
-    #     return df[["Simulated Monthly Volume"]]
 
     def ngen_csv_to_df(
         self,
@@ -407,3 +387,47 @@ class DataLoader:
         gdf = gpd.read_file(filepath)
         gdf["ID"] = "dangermond preserve"
         return gdf
+
+    def precip_stats(self):
+        """
+        Parse historic water balance, or CFE results, to generate
+        key summary statistics for use in the dashboard, including
+        the text descriptions.
+        """
+        # return NotImplementedError
+        year = 2004
+        rain_year = [f"{year}-07-01", f"{year+1}-06-30"]
+
+        # calculate mean rainfall (rain-year)
+        df = self.terraclim["ppt"]
+        # to monthly mean of all catchmens
+        domain_val = df.groupby("date")["value"].mean()  # .reset_index()
+        # sum of rain-year precip for `rain_year`
+        ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
+
+        # mean annual change in storage (inflow - outflow)
+
+        # total precip (rain year)
+
+        # total annual inflow
+
+        # total
+
+    def text_description(self):
+        """
+        Generate a text description.
+
+        Example:
+
+        Last year was an average/above/below rain year with XX atmospheric rivers
+        events delivering XX inches of precipitation. In 2022-23 rain-year we measured
+        average XX inches of precipitation at XX weather stations XX times the
+        average rainfall of XX inches.
+        """
+        return NotImplementedError
+        description = (
+            f"Last year was an average/above/below rain year with {n_ar}atmospheric rivers"
+            "events delivering {annual_precip} inches of precipitation. In 2022-23 rain-year we measured"
+            "average {} inches of precipitation at {} weather stations {} times the"
+            "average rainfall of {} inches. "
+        )
