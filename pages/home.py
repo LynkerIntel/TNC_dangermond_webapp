@@ -56,19 +56,6 @@ s3 = boto3.resource(
 
 data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
 
-# gdf_outline = data.get_outline()
-# gdf = data.get_local_hydrofabric(layer="divides")
-# gdf_wells = data.get_local_hydrofabric(layer="wells")
-# gdf_lines = data.get_local_hydrofabric(layer="flowpaths")
-# ds_ngen = data.ngen_dashboard_data(
-#     key="webapp_resources/ngen_validation_20241008_monthly.nc"
-# )
-# df_q = data.ngen_basin_q()
-# gw_delta = data.monthly_gw_delta(prefix="webapp_resources/monthly_gw_delta/")
-# df_nf = data.natural_flows()
-# df_cabcm = data.get_s3_cabcm()
-# tnc_domain_q = data.read_tnc_domain_q()
-
 
 # list of catchments in the ngen output data
 cats = data.ds_ngen["catchment"].to_pandas().to_list()
@@ -77,6 +64,8 @@ fig = go.Figure()
 
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
+precip_bar_fig = figures_main.precip_bar_fig(data)
+gw_bar_fig = figures_main.gw_bar_fig(data)
 
 
 layout = html.Div(
@@ -99,9 +88,32 @@ layout = html.Div(
                                     }
                                 ),
                                 dcc.Store(id="cat-click-store"),
-                                html.Br(),
                                 # shows selected reach
                                 html.Div(id="contents", hidden=True),
+                                dbc.Label("Model Formulation:"),
+                                dbc.Checklist(
+                                    options=[
+                                        {
+                                            "label": "CFE - Streamflow Cal.",
+                                            "value": 1,
+                                        },
+                                        {
+                                            "label": "CFE - Groundwater Cal.",
+                                            "value": 2,
+                                            "disabled": "True",
+                                        },
+                                    ],
+                                    value=[1],
+                                    id="switches-input",
+                                    switch=True,
+                                    style={
+                                        "padding": "0rem 1.5rem 0rem 1.5rem",
+                                        # "color": "pink",
+                                    },
+                                    # input_style={"color": "pink"},
+                                    # input_class_name="custom-checkbox custom-control-input",
+                                    # label_checked_class_name="custom-control-label",
+                                ),
                                 #
                                 # html.Div("Buttons"),
                                 # html.Div(
@@ -182,40 +194,11 @@ layout = html.Div(
                                 ),
                                 # html.Div(id="output-date"),
                                 # dbc.FormText("(YYYY/MM/DD)"),
-                                html.Br(),
+                                # html.Br(),
                                 # html.Br(),
                                 html.Div(
                                     [
-                                        dbc.Label("Model Formulation:"),
-                                        dbc.Checklist(
-                                            options=[
-                                                {
-                                                    "label": "CFE",
-                                                    "value": 1,
-                                                },
-                                                {
-                                                    "label": "LSTM",
-                                                    "value": 2,
-                                                    "disabled": "True",
-                                                },
-                                                {
-                                                    "label": "LGAR",
-                                                    "value": 2,
-                                                    "disabled": "True",
-                                                },
-                                            ],
-                                            value=[1],
-                                            id="switches-input",
-                                            switch=True,
-                                            style={
-                                                "padding": "0rem 1.5rem 0rem 1.5rem",
-                                                # "color": "pink",
-                                            },
-                                            # input_style={"color": "pink"},
-                                            # input_class_name="custom-checkbox custom-control-input",
-                                            # label_checked_class_name="custom-control-label",
-                                        ),
-                                        html.Br(),
+                                        # html.Br(),
                                         dbc.Label("Select Output Variable:"),
                                         dcc.Dropdown(
                                             id="variable-dropdown",
@@ -334,7 +317,10 @@ layout = html.Div(
                                     dcc.Graph(
                                         id="choropleth-map",
                                         style={"height": "40vh"},
-                                        config={"displaylogo": False},
+                                        config={
+                                            "displaylogo": False,
+                                            "scrollZoom": True,
+                                        },
                                     ),
                                 ],
                             ),
@@ -350,6 +336,32 @@ layout = html.Div(
                                     ),
                                 ],
                             ),
+                            dcc.Loading(
+                                id="loading-spinner-wb_ts",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        # id="bar_fig"
+                                        figure=precip_bar_fig,
+                                        style={"height": "50vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
+                            ),
+                            # dcc.Loading(
+                            #     id="loading-spinner-wb_ts",
+                            #     delay_show=100,
+                            #     type="default",
+                            #     children=[
+                            #         dcc.Graph(
+                            #             # id="bar_fig"
+                            #             figure=gw_bar_fig,
+                            #             style={"height": "50vh"},
+                            #             config={"displaylogo": False},
+                            #         ),
+                            #     ],
+                            # ),
                             # DBC Modal
                             dbc.Modal(
                                 [
@@ -376,7 +388,11 @@ layout = html.Div(
                                 size="xl",
                                 is_open=False,  # Initially closed
                             ),
-                        ]
+                        ],
+                        style={
+                            "overflow-y": "scroll",  # Enables vertical scrolling
+                            "height": "90vh",  # Sets the height to constrain the content
+                        },
                     )
                 ),
             ],
@@ -699,8 +715,8 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
     # if no catchment is selected, timeseries should be full domain
     else:
         # df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
-
-        fig = px.line(data.df_q)
+        # fig = px.line(data.df_q)
+        fig = px.line(data.cfe_q)
 
         fig.add_trace(
             go.Scatter(
@@ -716,7 +732,7 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             # height=100vw,
             autosize=True,
             # margin=dict(l=20, r=10, t=45, b=0),
-            title={"text": f"Full Basin Streamflow (Monthly Volume)"},
+            title={"text": f"Basin Streamflow (Monthly Volume)"},
             title_x=0.5,
             yaxis_title="Monthly Volume (cubic meters)",
             uirevision="Don't change",
@@ -858,3 +874,9 @@ def update_table(selected_date):
     )
 
     return table
+
+
+def describe_conditions():
+    """
+    Create a summary description of climatic conditions for a given year-month condition.
+    """

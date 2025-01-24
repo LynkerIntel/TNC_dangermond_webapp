@@ -91,6 +91,10 @@ class DataLoader:
             prefix="webapp_resources/monthly_gw_delta/"
         )
 
+        # post-processing
+        self.precip_stats()
+        self.ngen_stats()
+
     def pd_read_s3_parquet(self, key, **args):
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
         return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
@@ -401,9 +405,11 @@ class DataLoader:
         # calculate mean rainfall (rain-year)
         df = self.terraclim["ppt"]
         # to monthly mean of all catchmens
-        domain_val = df.groupby("date")["value"].mean()  # .reset_index()
+        domain_vals = df.groupby("date")["value"].mean()  # .reset_index()
+        self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index.year).sum()
+
         # sum of rain-year precip for `rain_year`
-        ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
+        # ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
 
         # mean annual change in storage (inflow - outflow)
 
@@ -412,6 +418,23 @@ class DataLoader:
         # total annual inflow
 
         # total
+
+    def ngen_stats(self):
+        """
+        process and aggregate ngen simulation for visualizations
+        """
+        df = pd.DataFrame()
+
+        df["DEEP_GW_TO_CHANNEL"] = (
+            self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"].mean("catchment").to_pandas()
+        )
+        df["SOIL_TO_GW_FLUX"] = (
+            self.ds_ngen["SOIL_TO_GW_FLUX"].mean("catchment").to_pandas()
+        )
+        df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
+
+        df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
+        self.gw_delta_yr = df.resample("YE").sum() * 3.2808  # UNIT meters to feet
 
     def text_description(self):
         """

@@ -146,3 +146,59 @@ def mapbox_line_gdf_fmt(gdf, id_col="ID"):
             names = np.append(names, None)
 
     return lats, lons, names
+
+
+def precip_bar_fig(data):
+    """Demo bar chart fig"""
+    # Assuming annual_totals is a pandas Series
+    mean_value = data.terraclim_ann_precip.mean()
+
+    # Create the bar chart
+    fig = px.bar(
+        data.terraclim_ann_precip,
+        title="Annual Precip",
+        labels={"index": "Date", "value": "Mean Rainfall (mm)"},
+        template="plotly_white",
+    )
+
+    # Add a horizontal line as a separate trace to include it in the legend
+    fig.add_trace(
+        go.Scatter(
+            x=data.terraclim_ann_precip.index,
+            y=[mean_value]
+            * len(data.terraclim_ann_precip),  # Repeat mean_value for the same length
+            mode="lines",
+            name=f"Mean: {mean_value:.2f}",
+            line=dict(color="gray", width=1),
+        )
+    )
+    # Center the title
+    fig.update_layout(
+        title={
+            "text": "Basin Total Precip - TerraClimate",  # Title text
+            "x": 0.5,  # Centers the title
+            "xanchor": "center",  # Anchors the title in the center
+        }
+    )
+    return fig
+
+
+def gw_bar_fig(data):
+    """Demo groundwater bar chart fig"""
+    # Create the bar chart
+    fig = px.bar(
+        data.gw_delta_yr["net"],
+        title="Annual Change in Groundwater Elevation",
+        labels={"index": "Date", "value": "(feet)"},
+        template="plotly_white",
+    )
+
+    # Center the title
+    fig.update_layout(
+        title={
+            "text": "Annual Change in Groundwater Elevation",  # Title text
+            "x": 0.5,  # Centers the title
+            "xanchor": "center",  # Anchors the title in the center
+        }
+    )
+    return fig
