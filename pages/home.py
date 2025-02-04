@@ -151,7 +151,7 @@ layout = html.Div(
                                 #     ],
                                 #     className="d-md-flex mt-1",
                                 # ),
-                                html.Div("Select year and month:"),
+                                dbc.Label("Select year and month:"),
                                 # dcc.DatePickerSingle(
                                 #     display_format="YYYY/MM/DD",
                                 #     id="date-picker-range",
@@ -200,7 +200,7 @@ layout = html.Div(
                                 html.Div(
                                     [
                                         # html.Br(),
-                                        dbc.Label("Select Output Variable:"),
+                                        dbc.Label("Select output variable:"),
                                         dcc.Dropdown(
                                             id="variable-dropdown",
                                             options=[
