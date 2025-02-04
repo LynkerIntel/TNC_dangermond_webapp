@@ -85,7 +85,7 @@ class DataLoader:
         self.cfe_q = self.cfe_basin_q()
 
         self.ds_ngen = self.ngen_dashboard_data(
-            key="webapp_resources/ngen_validation_20241008_monthly.nc"
+            key="webapp_resources/ngen_validation_20241103_monthly.nc"
         )
         self.gw_delta = self.monthly_gw_delta(
             prefix="webapp_resources/monthly_gw_delta/"
@@ -206,18 +206,34 @@ class DataLoader:
         Returns:
             DataFrame: Simulated monthly volume.
         """
-        df = self.pd_read_s3_csv(
-            key="ngen_dr/cfe_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
-        )
-        df.index = pd.to_datetime(df["time"])
-        df = df[["sim_flow"]]
-        # Convert daily streamflow (m³/s) to volume per day (m³/day)
-        df["Simulated Monthly Volume"] = (
-            df["sim_flow"] * 86400  # UNIT
-        )  # 86400 seconds in a day
-        df = df.resample("MS").sum()
+        # v1
+        # df = self.pd_read_s3_csv(
+        #     key="ngen_dr/cfe_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
+        # )
+        # df.index = pd.to_datetime(df["time"])
+        # df = df[["sim_flow"]]
+        # # Convert daily streamflow (m³/s) to volume per day (m³/day)
+        # df["Simulated Monthly Volume"] = (
+        #     df["sim_flow"] * 86400  # UNIT
+        # )  # 86400 seconds in a day
+        # df = df.resample("MS").sum()
+        # return df[["Simulated Monthly Volume"]]
 
-        return df[["Simulated Monthly Volume"]]
+        # v2
+        # ds = xr.open_dataset(
+        #     "/Users/dillonragar/data/tnc/cfe_valid_2024_11_03/output_300/troute_output_198109300000.nc"
+        # )
+
+        # df = ds.sel({"feature_id": 23})["flow"].to_pandas()
+        # df *= 3600
+        # df = df.resample("MS").sum()
+
+        # df_out = pd.DataFrame(df)
+
+        df = self.pd_read_s3_parquet(
+            key="webapp_resources/cfe_20241103_troute_cat23.parquet"
+        )
+        return df[["flow"]]
 
     def ngen_csv_to_df(
         self,
@@ -397,16 +413,42 @@ class DataLoader:
         Parse historic water balance, or CFE results, to generate
         key summary statistics for use in the dashboard, including
         the text descriptions.
+
+        This should return data for all years, year specific logic
+        should go in `home.update_summary_text()`
         """
         # return NotImplementedError
-        year = 2004
-        rain_year = [f"{year}-07-01", f"{year+1}-06-30"]
+        # year = 2004
+        # rain_year = [f"{year}-07-01", f"{year+1}-06-30"]
 
         # calculate mean rainfall (rain-year)
         df = self.terraclim["ppt"]
         # to monthly mean of all catchmens
         domain_vals = df.groupby("date")["value"].mean()  # .reset_index()
         self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index.year).sum()
+        self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1981":]
+
+        # Compute quartiles for precipitation accumulation
+        quartile = pd.qcut(
+            self.terraclim_ann_precip,
+            q=5,
+            labels=[
+                "a far below average",
+                "a below average",
+                "a near average",
+                "an above average",
+                "a far above average",
+            ],
+        )
+
+        # Attach quartiles as a DataFrame with precipitation values for reference
+        self.terraclim_ann_precip = pd.DataFrame(
+            {"Annual Precip (mm)": self.terraclim_ann_precip, "Quartile": quartile}
+        )
+
+        self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
+            "Annual Precip (mm)"
+        ].mean()
 
         # sum of rain-year precip for `rain_year`
         # ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
@@ -434,7 +476,11 @@ class DataLoader:
         df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
 
         df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
-        self.gw_delta_yr = df.resample("YE").sum() * 3.2808  # UNIT meters to feet
+
+        df *= 3.2808  # UNIT meters to feet
+
+        self.gw_net = df
+        self.gw_delta_yr = df.resample("YE").sum()
 
     def text_description(self):
         """
