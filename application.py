@@ -96,7 +96,11 @@ def create_app():
             header_layout,
             dash.page_container,
         ],
-        style={"padding": "0"},
+        style={
+            "padding": "0",
+            # "width": "100% !important",
+            "overflow-x": "hidden",
+        },
     )
 
     # return the Dash app
