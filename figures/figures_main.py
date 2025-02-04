@@ -148,38 +148,128 @@ def mapbox_line_gdf_fmt(gdf, id_col="ID"):
     return lats, lons, names
 
 
-def precip_bar_fig(data):
-    """Demo bar chart fig"""
-    # Assuming annual_totals is a pandas Series
-    mean_value = data.terraclim_ann_precip.mean()
+# def precip_bar_fig(data):
+#     """Demo bar chart fig"""
+#     # Assuming annual_totals is a pandas Series
+#     mean_value = data.terraclim_ann_precip.mean()
 
-    # Create the bar chart
-    fig = px.bar(
-        data.terraclim_ann_precip,
-        title="Annual Precip",
-        labels={"index": "Date", "value": "Mean Rainfall (mm)"},
-        template="plotly_white",
+#     # Create the bar chart
+#     fig = px.bar(
+#         data.terraclim_ann_precip,
+#         title="Annual Precip",
+#         labels={"index": "Date", "value": "Mean Rainfall (mm)"},
+#         template="plotly_white",
+#     )
+
+#     # Add a horizontal line as a separate trace to include it in the legend
+#     fig.add_trace(
+#         go.Scatter(
+#             x=data.terraclim_ann_precip.index,
+#             y=[mean_value]
+#             * len(data.terraclim_ann_precip),  # Repeat mean_value for the same length
+#             mode="lines",
+#             name=f"Mean: {mean_value:.2f}",
+#             line=dict(color="gray", width=1),
+#         )
+#     )
+
+#     # Center the title
+#     fig.update_layout(
+#         title={
+#             "text": "Basin Total Precip - TerraClimate",  # Title text
+#             "x": 0.5,  # Centers the title
+#             "xanchor": "center",  # Anchors the title in the center
+#         }
+#     )
+#     return fig
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import plotly.express as px
+
+
+def precip_bar_fig(data):
+    """Demo bar chart fig with an additional stacked bar chart for groundwater fluxes."""
+
+    # Calculate the mean precipitation value
+    mean_value = data.terraclim_ann_precip["Annual Precip (mm)"].mean()
+
+    # Create a subplot with two rows and a shared x-axis
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=[
+            "Basin Total Precipitation (TerraClimate)",
+            "Annual Sum of Groundwater Input/Output",
+        ],
     )
 
-    # Add a horizontal line as a separate trace to include it in the legend
+    # First plot: Annual Precipitation Bar Chart
+    fig.add_trace(
+        go.Bar(
+            x=data.terraclim_ann_precip.index,
+            y=data.terraclim_ann_precip["Annual Precip (mm)"],
+            name="Annual Precipitation",
+            showlegend=True,  # Keep legend in the first chart
+        ),
+        row=1,
+        col=1,
+    )
+
+    # Add mean precipitation as a horizontal line
     fig.add_trace(
         go.Scatter(
             x=data.terraclim_ann_precip.index,
-            y=[mean_value]
-            * len(data.terraclim_ann_precip),  # Repeat mean_value for the same length
+            y=[mean_value] * len(data.terraclim_ann_precip["Annual Precip (mm)"]),
             mode="lines",
             name=f"Mean: {mean_value:.2f}",
             line=dict(color="gray", width=1),
-        )
+            showlegend=True,  # Keep legend in the first chart
+        ),
+        row=1,
+        col=1,
     )
-    # Center the title
+
+    # Second plot: Stacked Bar Chart for Groundwater Fluxes
+    fig.add_trace(
+        go.Bar(
+            x=data.gw_delta_yr.index,
+            y=data.gw_delta_yr["SOIL_TO_GW_FLUX"],
+            name="SOIL_TO_GW_FLUX",
+            showlegend=True,  # Show legend in the second chart
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=data.gw_delta_yr.index,
+            y=data.gw_delta_yr["DEEP_GW_TO_CHANNEL"],
+            name="DEEP_GW_TO_CHANNEL",
+            showlegend=True,  # Show legend in the second chart
+        ),
+        row=2,
+        col=1,
+    )
+
+    # Update layout for stacking in the second plot
     fig.update_layout(
-        title={
-            "text": "Basin Total Precip - TerraClimate",  # Title text
-            "x": 0.5,  # Centers the title
-            "xanchor": "center",  # Anchors the title in the center
-        }
+        barmode="stack",
+        # title={
+        #     "text": "Basin Total Precipitation and Groundwater Fluxes",
+        #     "x": 0.5,
+        #     "xanchor": "center",
+        # },
+        xaxis=dict(title="Year"),
+        xaxis2=dict(title="Year"),  # Shared x-axis for the second plot
+        yaxis=dict(title="Precipitation (mm)"),
+        yaxis2=dict(title="Sum Change (feet)"),
+        legend=dict(title="Legend"),
+        template="plotly_white",
+        height=3200,  # Adjust height to fit both plots
     )
+
     return fig
 
 
@@ -200,5 +290,9 @@ def gw_bar_fig(data):
             "x": 0.5,  # Centers the title
             "xanchor": "center",  # Anchors the title in the center
         }
+    )
+
+    fig.update_layout(
+        margin=dict(l=10, r=10, t=0, b=10),  # Set bottom margin (b) to 10 pixels
     )
     return fig
