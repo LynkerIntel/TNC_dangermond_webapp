@@ -78,6 +78,7 @@ layout = html.Div(
                             parent_className="loading_wrapper",
                             children=[
                                 # html.Div(html.H4("Dangermond Preserve")),
+                                html.Br(),
                                 html.Div(html.P("Model Output Explorer")),
                                 html.Hr(
                                     style={
@@ -261,7 +262,20 @@ layout = html.Div(
                                         )
                                     ],
                                 ),
-                                html.Br(),
+                                # html.Br(),
+                                html.Div(
+                                    [
+                                        dbc.Label("Data Summary:"),
+                                        dcc.Markdown(
+                                            id="summary-text",
+                                            children="Loading data...",
+                                            style={
+                                                "padding": "0.5rem",
+                                                "font-size": "14px",
+                                            },
+                                        ),
+                                    ]
+                                ),
                                 html.Div(
                                     [
                                         dbc.Button(
@@ -299,12 +313,12 @@ layout = html.Div(
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
                     lg=3,
-                    className="ml-3 mt-3",
-                    # style={
-                    #     "background-color": "gray",
-                    #     # "padding": "20 20 20 20",
-                    #     # "margin": "10 10 10 10",
-                    # },
+                    className="ml-3 mt-0",
+                    style={
+                        "background-color": "#f0f0f0",
+                        # "padding": "20 20 20 20",
+                        # "margin": "10 10 10 10",
+                    },
                 ),
                 dbc.Col(
                     html.Div(
@@ -331,7 +345,7 @@ layout = html.Div(
                                 children=[
                                     dcc.Graph(
                                         id="wb_ts_fig",
-                                        style={"height": "50vh"},
+                                        style={"height": "40vh"},
                                         config={"displaylogo": False},
                                     ),
                                 ],
@@ -344,7 +358,7 @@ layout = html.Div(
                                     dcc.Graph(
                                         # id="bar_fig"
                                         figure=precip_bar_fig,
-                                        style={"height": "50vh"},
+                                        style={"height": "70vh"},
                                         config={"displaylogo": False},
                                     ),
                                 ],
@@ -391,9 +405,16 @@ layout = html.Div(
                         ],
                         style={
                             "overflow-y": "scroll",  # Enables vertical scrolling
-                            "height": "90vh",  # Sets the height to constrain the content
+                            "height": "93vh",
+                            "box-shadow": "-4px -4px 10px rgba(0, 0, 0, 0.1)",
                         },
-                    )
+                    ),
+                    style={
+                        # "backgroundColor": "#cccccc",
+                        "border-radius": "5px",
+                        # "overflow-x": "hidden",
+                    },  # dbc.Col style
+                    class_name="mr-3",
                 ),
             ],
         )
@@ -653,6 +674,12 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                 # add model output discharge
 
                 fig.update_layout(plot_bgcolor="white")
+                # Reduce bottom margin
+                # fig.update_layout(
+                #     margin=dict(
+                #         l=10, r=10, t=30, b=10
+                #     ),  # Set bottom margin (b) to 10 pixels
+                # )
                 # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
                 # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
 
@@ -706,6 +733,12 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
                     # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
                 )
 
+                # fig.update_layout(
+                #     margin=dict(
+                #         l=10, r=10, t=30, b=10
+                #     ),  # Set bottom margin (b) to 10 pixels
+                # )
+
                 fig.update_layout(
                     yaxis_title="millimeters",
                 )
@@ -738,6 +771,10 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             uirevision="Don't change",
             # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
         )
+
+        # fig.update_layout(
+        #     margin=dict(l=10, r=10, t=10, b=0),  # Set bottom margin (b) to 10 pixels
+        # )
 
         return fig
 
@@ -876,7 +913,53 @@ def update_table(selected_date):
     return table
 
 
-def describe_conditions():
+@callback(
+    Output("summary-text", "children"),
+    Input("year-dropdown", "value"),
+)
+def update_summary_text(selected_year):
     """
-    Create a summary description of climatic conditions for a given year-month condition.
+    Update summary paragraph with statistics from the data class.
     """
+    if selected_year is None:
+        raise PreventUpdate
+
+    # Convert selected year into water year format
+    water_year = f"Water Year {selected_year}"
+
+    # Get total precipitation for the selected water year (example dataset key)
+    if hasattr(data, "terraclim_ann_precip"):
+        total_precip = data.terraclim_ann_precip["Annual Precip (mm)"].loc[
+            selected_year
+        ]
+        precip_quartile = data.terraclim_ann_precip["Quartile"].loc[selected_year]
+    else:
+        total_precip = None
+        precip_quartile = None
+
+    if hasattr(data, "terraclim_mean_annual_precip"):
+        mean_precip = data.terraclim_mean_annual_precip
+        precip_magnitude = total_precip / mean_precip
+
+        if precip_magnitude > 1:
+            precip_sign = "greater"
+        elif precip_magnitude <= 1:
+            precip_sign = "less"
+    else:
+        total_precip = "NaN"
+        precip_sign = None
+
+    # if total_precip is None:
+    #     return f"In {water_year}, precipitation data is unavailable."
+
+    # Convert from millimeters to inches (if needed)
+    total_precip_inches = total_precip * 0.0393701  # mm to inches
+
+    # Format text output
+    summary_text = (
+        f"{selected_year} was {precip_quartile} rain year, with a total of "
+        f"{total_precip_inches:.1f} inches of precipitation in the preserve. "
+        f"This was {precip_magnitude:.1f} times {precip_sign} than normal."
+    )
+
+    return summary_text
