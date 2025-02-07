@@ -95,11 +95,11 @@ layout = html.Div(
                                 dbc.Checklist(
                                     options=[
                                         {
-                                            "label": "CFE - Streamflow Cal.",
+                                            "label": "CFE - Groundwater Calibration",
                                             "value": 1,
                                         },
                                         {
-                                            "label": "CFE - Groundwater Cal.",
+                                            "label": "CFE - Streamflow Calibration",
                                             "value": 2,
                                             "disabled": "True",
                                         },

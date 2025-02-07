@@ -91,19 +91,20 @@ def mapbox_lines(
         )
     )
 
-    fig.add_trace(
-        go.Scattermapbox(
-            lat=gdf_wells["lat"],
-            lon=gdf_wells["lon"],
-            mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermapbox.Marker(
-                size=6, color="white"  # You can change the marker color
-            ),
-            hovertext=gdf_wells["name"],  # Text labels for each point
-            customdata=gdf_wells["station_id_dendra"],
-            # hoverinfo="text",
-        )
-    )
+    # Groundwell Location Markers
+    # fig.add_trace(
+    #     go.Scattermapbox(
+    #         lat=gdf_wells["lat"],
+    #         lon=gdf_wells["lon"],
+    #         mode="markers+text",  # You can also use 'markers' or 'text' alone
+    #         marker=go.scattermapbox.Marker(
+    #             size=6, color="white"  # You can change the marker color
+    #         ),
+    #         hovertext=gdf_wells["name"],  # Text labels for each point
+    #         customdata=gdf_wells["station_id_dendra"],
+    #         # hoverinfo="text",
+    #     )
+    # )
 
     fig.update_traces(
         marker_line_width=0, marker_opacity=0, selector=dict(type="choropleth")
@@ -182,16 +183,26 @@ def mapbox_line_gdf_fmt(gdf, id_col="ID"):
 #         }
 #     )
 #     return fig
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-import plotly.express as px
 
 
 def precip_bar_fig(data):
-    """Demo bar chart fig with an additional stacked bar chart for groundwater fluxes."""
+    """Demo bar chart fig with an additional stacked bar chart for groundwater fluxes,
+    where precipitation bars are colored by quartile.
+    """
 
     # Calculate the mean precipitation value
     mean_value = data.terraclim_ann_precip["Annual Precip (mm)"].mean()
+
+    quartile_colors = {
+        "a far below average": "#E69F00",
+        "a below average": "#F4C05D",
+        "a near average": "#EDE682",
+        "an above average": "#85C0F9",
+        "a far above average": "#0072B2",
+    }
+
+    # Assign colors based on quartiles
+    bar_colors = data.terraclim_ann_precip["Quartile"].map(quartile_colors)
 
     # Create a subplot with two rows and a shared x-axis
     fig = make_subplots(
@@ -204,13 +215,14 @@ def precip_bar_fig(data):
         ],
     )
 
-    # First plot: Annual Precipitation Bar Chart
+    # First plot: Annual Precipitation Bar Chart with Quartile Colors
     fig.add_trace(
         go.Bar(
             x=data.terraclim_ann_precip.index,
             y=data.terraclim_ann_precip["Annual Precip (mm)"],
+            marker=dict(color=bar_colors),
             name="Annual Precipitation",
-            showlegend=True,  # Keep legend in the first chart
+            showlegend=False,
         ),
         row=1,
         col=1,
@@ -224,7 +236,7 @@ def precip_bar_fig(data):
             mode="lines",
             name=f"Mean: {mean_value:.2f}",
             line=dict(color="gray", width=1),
-            showlegend=True,  # Keep legend in the first chart
+            showlegend=True,
         ),
         row=1,
         col=1,
@@ -236,7 +248,7 @@ def precip_bar_fig(data):
             x=data.gw_delta_yr.index,
             y=data.gw_delta_yr["SOIL_TO_GW_FLUX"],
             name="SOIL_TO_GW_FLUX",
-            showlegend=True,  # Show legend in the second chart
+            showlegend=True,
         ),
         row=2,
         col=1,
@@ -247,7 +259,7 @@ def precip_bar_fig(data):
             x=data.gw_delta_yr.index,
             y=data.gw_delta_yr["DEEP_GW_TO_CHANNEL"],
             name="DEEP_GW_TO_CHANNEL",
-            showlegend=True,  # Show legend in the second chart
+            showlegend=True,
         ),
         row=2,
         col=1,
@@ -256,18 +268,13 @@ def precip_bar_fig(data):
     # Update layout for stacking in the second plot
     fig.update_layout(
         barmode="stack",
-        # title={
-        #     "text": "Basin Total Precipitation and Groundwater Fluxes",
-        #     "x": 0.5,
-        #     "xanchor": "center",
-        # },
         xaxis=dict(title="Year"),
-        xaxis2=dict(title="Year"),  # Shared x-axis for the second plot
+        xaxis2=dict(title="Year"),
         yaxis=dict(title="Precipitation (mm)"),
         yaxis2=dict(title="Sum Change (feet)"),
         legend=dict(title="Legend"),
         template="plotly_white",
-        height=3200,  # Adjust height to fit both plots
+        height=800,
     )
 
     return fig
