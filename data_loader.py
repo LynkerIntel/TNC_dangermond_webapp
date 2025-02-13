@@ -94,6 +94,7 @@ class DataLoader:
         # post-processing
         self.precip_stats()
         self.ngen_stats()
+        self.ngen_gw_vol()
 
     def pd_read_s3_parquet(self, key, **args):
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
@@ -322,6 +323,7 @@ class DataLoader:
         file_stream = io.BytesIO(response["Body"].read())
 
         ds = xr.open_dataset(file_stream, engine="scipy")
+        ds = ds.sel(Time=slice("1982-10-01", None))
         return ds
 
     def monthly_gw_delta(self, prefix: str) -> dict[str, pd.DataFrame]:
@@ -408,25 +410,74 @@ class DataLoader:
         gdf["ID"] = "dangermond preserve"
         return gdf
 
+    # def precip_stats(self):
+    #     """
+    #     Parse historic water balance, or CFE results, to generate
+    #     key summary statistics for use in the dashboard, including
+    #     the text descriptions.
+
+    #     This should return data for all years, year specific logic
+    #     should go in `home.update_summary_text()`
+    #     """
+    #     # calculate mean rainfall (rain-year)
+    #     df = self.terraclim["ppt"]
+    #     # to monthly mean of all catchmens
+    #     domain_vals = df.groupby("date")["value"].mean()  # .reset_index()
+    #     self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index.year).sum()
+    #     self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1981":]
+
+    #     # Compute quartiles for precipitation accumulation
+    #     quartile = pd.qcut(
+    #         self.terraclim_ann_precip,
+    #         q=5,
+    #         labels=[
+    #             "a far below average",
+    #             "a below average",
+    #             "a near average",
+    #             "an above average",
+    #             "a far above average",
+    #         ],
+    #     )
+
+    #     # Attach quartiles as a DataFrame with precipitation values for reference
+    #     self.terraclim_ann_precip = pd.DataFrame(
+    #         {"Annual Precip (mm)": self.terraclim_ann_precip, "Quartile": quartile}
+    #     )
+
+    #     self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
+    #         "Annual Precip (mm)"
+    #     ].mean()
+
+    #     # sum of rain-year precip for `rain_year`
+    #     # ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
+
+    #     # mean annual change in storage (inflow - outflow)
+
+    #     # total precip (rain year)
+
+    #     # total annual inflow
+
+    #     # total
+
     def precip_stats(self):
         """
         Parse historic water balance, or CFE results, to generate
         key summary statistics for use in the dashboard, including
         the text descriptions.
 
-        This should return data for all years, year specific logic
-        should go in `home.update_summary_text()`
+        This should return data for all years, year-specific logic
+        should go in `home.update_summary_text()`.
         """
-        # return NotImplementedError
-        # year = 2004
-        # rain_year = [f"{year}-07-01", f"{year+1}-06-30"]
-
-        # calculate mean rainfall (rain-year)
+        # Access precipitation data
         df = self.terraclim["ppt"]
-        # to monthly mean of all catchmens
-        domain_vals = df.groupby("date")["value"].mean()  # .reset_index()
-        self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index.year).sum()
-        self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1981":]
+
+        # Create a new column for water year
+        df["water_year"] = df.index.year.where(df.index.month < 10, df.index.year + 1)
+
+        # Group by water year and calculate annual precipitation totals
+        domain_vals = df.groupby("water_year")["value"].mean()
+        self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index).sum()
+        self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1982":]
 
         # Compute quartiles for precipitation accumulation
         quartile = pd.qcut(
@@ -450,17 +501,6 @@ class DataLoader:
             "Annual Precip (mm)"
         ].mean()
 
-        # sum of rain-year precip for `rain_year`
-        # ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
-
-        # mean annual change in storage (inflow - outflow)
-
-        # total precip (rain year)
-
-        # total annual inflow
-
-        # total
-
     def ngen_stats(self):
         """
         process and aggregate ngen simulation for visualizations
@@ -482,21 +522,79 @@ class DataLoader:
         self.gw_net = df
         self.gw_delta_yr = df.resample("YE").sum()
 
-    def text_description(self):
-        """
-        Generate a text description.
+    def ngen_gw_vol(self):
+        """Calculate storage based on groundwater infiltration and outflow to channel"""
+        # Get the list of catchments present in the dataset
+        # Conversion factor from cubic feet to acre-feet
+        # Conversion factor from km² to ft²
+        SQKM_TO_SQFT = 1e6 * 10.7639
+        FT3_TO_ACRE_FT = 1 / 43560
 
-        Example:
+        dataset_catchments = self.ds_ngen["catchment"].values
 
-        Last year was an average/above/below rain year with XX atmospheric rivers
-        events delivering XX inches of precipitation. In 2022-23 rain-year we measured
-        average XX inches of precipitation at XX weather stations XX times the
-        average rainfall of XX inches.
-        """
-        return NotImplementedError
-        description = (
-            f"Last year was an average/above/below rain year with {n_ar}atmospheric rivers"
-            "events delivering {annual_precip} inches of precipitation. In 2022-23 rain-year we measured"
-            "average {} inches of precipitation at {} weather stations {} times the"
-            "average rainfall of {} inches. "
+        # Filter the GeoDataFrame to include only catchments that exist in the dataset
+        catchment_areas = (
+            self.gdf_lines.set_index("divide_id")
+            .loc[dataset_catchments, "areasqkm"]  # Select only relevant catchments
+            .dropna()  # Drop any missing values to avoid mismatches
         )
+
+        # Ensure the index name matches the dataset dimension name
+        catchment_areas.index.name = "catchment"
+
+        # Convert to an xarray DataArray with matching coordinates
+        catchment_areas_xr = xr.DataArray(
+            catchment_areas,
+            coords={"catchment": catchment_areas.index},
+            dims="catchment",
+        )
+
+        # Add it to the dataset
+        self.ds_ngen["areasqkm"] = catchment_areas_xr
+
+        # Ensure areasqkm is in the correct units (square feet)
+        self.ds_ngen["area_sqft"] = self.ds_ngen["areasqkm"] * SQKM_TO_SQFT
+
+        # compute total volume (ft³/month) for each catchment
+        self.ds_ngen["SOIL_TO_GW_VOL"] = (
+            self.ds_ngen["SOIL_TO_GW_FLUX"] * self.ds_ngen["area_sqft"]
+        )
+        self.ds_ngen["DEEP_GW_TO_CHANNEL_VOL"] = (
+            self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"] * self.ds_ngen["area_sqft"]
+        )
+
+        self.ds_ngen["NET_VOL"] = (
+            self.ds_ngen["SOIL_TO_GW_VOL"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_VOL"]
+        )
+
+        # Convert NET_VOL to acre-feet
+        self.ds_ngen["NET_VOL_ACRE_FT"] = self.ds_ngen["NET_VOL"] * FT3_TO_ACRE_FT
+
+        self.ngen_basinwide_gw_storage = (
+            self.ds_ngen["NET_VOL_ACRE_FT"]
+            .sum(dim="catchment")
+            .cumsum()
+            .to_pandas()
+            # .resample("YE")
+            # .sum()
+        )
+
+
+# def text_description(self):
+#     """
+#     Generate a text description.
+
+#     Example:
+
+#     Last year was an average/above/below rain year with XX atmospheric rivers
+#     events delivering XX inches of precipitation. In 2022-23 rain-year we measured
+#     average XX inches of precipitation at XX weather stations XX times the
+#     average rainfall of XX inches.
+#     """
+#     return NotImplementedError
+#     description = (
+#         f"Last year was an average/above/below rain year with {n_ar}atmospheric rivers"
+#         "events delivering {annual_precip} inches of precipitation. In 2022-23 rain-year we measured"
+#         "average {} inches of precipitation at {} weather stations {} times the"
+#         "average rainfall of {} inches. "
+#     )

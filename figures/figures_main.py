@@ -1,5 +1,7 @@
 import plotly.express as px
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+
 import pandas as pd
 from urllib.request import urlopen
 import shapely.geometry
@@ -211,7 +213,7 @@ def precip_bar_fig(data):
         shared_xaxes=True,
         subplot_titles=[
             "Basin Total Precipitation (TerraClimate)",
-            "Annual Sum of Groundwater Input/Output",
+            "Cumulative Change in Ground Water Storage",
         ],
     )
 
@@ -236,7 +238,7 @@ def precip_bar_fig(data):
             mode="lines",
             name=f"Mean: {mean_value:.2f}",
             line=dict(color="gray", width=1),
-            showlegend=True,
+            showlegend=False,
         ),
         row=1,
         col=1,
@@ -244,35 +246,35 @@ def precip_bar_fig(data):
 
     # Second plot: Stacked Bar Chart for Groundwater Fluxes
     fig.add_trace(
-        go.Bar(
-            x=data.gw_delta_yr.index,
-            y=data.gw_delta_yr["SOIL_TO_GW_FLUX"],
-            name="SOIL_TO_GW_FLUX",
-            showlegend=True,
+        go.Line(
+            x=data.ngen_basinwide_gw_storage.index,
+            y=data.ngen_basinwide_gw_storage,
+            name="Storage Volume",
+            showlegend=False,
         ),
         row=2,
         col=1,
     )
 
-    fig.add_trace(
-        go.Bar(
-            x=data.gw_delta_yr.index,
-            y=data.gw_delta_yr["DEEP_GW_TO_CHANNEL"],
-            name="DEEP_GW_TO_CHANNEL",
-            showlegend=True,
-        ),
-        row=2,
-        col=1,
-    )
+    # fig.add_trace(
+    #     go.Bar(
+    #         x=data.gw_delta_yr.index,
+    #         y=data.gw_delta_yr["DEEP_GW_TO_CHANNEL"],
+    #         name="DEEP_GW_TO_CHANNEL",
+    #         showlegend=True,
+    #     ),
+    #     row=2,
+    #     col=1,
+    # )
 
     # Update layout for stacking in the second plot
     fig.update_layout(
         barmode="stack",
-        xaxis=dict(title="Year"),
-        xaxis2=dict(title="Year"),
+        xaxis=dict(title="Water Year"),
+        # xaxis2=dict(title="Year"),
         yaxis=dict(title="Precipitation (mm)"),
-        yaxis2=dict(title="Sum Change (feet)"),
-        legend=dict(title="Legend"),
+        yaxis2=dict(title="(acre-feet)"),
+        # legend=dict(title="Legend"),
         template="plotly_white",
         height=800,
     )
@@ -280,26 +282,27 @@ def precip_bar_fig(data):
     return fig
 
 
-def gw_bar_fig(data):
-    """Demo groundwater bar chart fig"""
-    # Create the bar chart
-    fig = px.bar(
-        data.gw_delta_yr["net"],
-        title="Annual Change in Groundwater Elevation",
-        labels={"index": "Date", "value": "(feet)"},
-        template="plotly_white",
-    )
+# def gw_bar_fig(data):
+#     """Demo groundwater bar chart fig"""
+#     # Create the bar chart
 
-    # Center the title
-    fig.update_layout(
-        title={
-            "text": "Annual Change in Groundwater Elevation",  # Title text
-            "x": 0.5,  # Centers the title
-            "xanchor": "center",  # Anchors the title in the center
-        }
-    )
+#     fig = px.line(
+#         data.ngen_basinwide_gw_storage,
+#         title="Change in Groundwater Storage",
+#         labels={"index": "Date", "value": "(acre-feet)"},
+#         template="plotly_white",
+#     )
 
-    fig.update_layout(
-        margin=dict(l=10, r=10, t=0, b=10),  # Set bottom margin (b) to 10 pixels
-    )
-    return fig
+#     # Center the title
+#     fig.update_layout(
+#         title={
+#             "text": "Change in Groundwater Storage",  # Title text
+#             "x": 0.5,  # Centers the title
+#             "xanchor": "center",  # Anchors the title in the center
+#         }
+#     )
+
+#     # fig.update_layout(
+#     #     margin=dict(l=10, r=10, t=0, b=10),  # Set bottom margin (b) to 10 pixels
+#     # )
+#     return fig

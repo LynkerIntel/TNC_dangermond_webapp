@@ -65,7 +65,7 @@ fig = go.Figure()
 # map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 precip_bar_fig = figures_main.precip_bar_fig(data)
-gw_bar_fig = figures_main.gw_bar_fig(data)
+# gw_bar_fig = figures_main.gw_bar_fig(data)
 
 
 layout = html.Div(
@@ -363,19 +363,6 @@ layout = html.Div(
                                     ),
                                 ],
                             ),
-                            # dcc.Loading(
-                            #     id="loading-spinner-wb_ts",
-                            #     delay_show=100,
-                            #     type="default",
-                            #     children=[
-                            #         dcc.Graph(
-                            #             # id="bar_fig"
-                            #             figure=gw_bar_fig,
-                            #             style={"height": "50vh"},
-                            #             config={"displaylogo": False},
-                            #         ),
-                            #     ],
-                            # ),
                             # DBC Modal
                             dbc.Modal(
                                 [
