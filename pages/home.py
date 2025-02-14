@@ -521,10 +521,9 @@ def update_modal_content(click_data):
     # suppress_callback_exceptions=True,
 )
 def update_modal_figure(click_data):
-    """Update modal fig
+    """Update modal fig with comparison of CFE groundwater elevation and observerd well level.
 
     TODO: subset well locations on plot to only those with good data
-
     """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
@@ -541,66 +540,51 @@ def update_modal_figure(click_data):
             ].values[0]
             print(f"{cat=}")
 
-            # (1) make sure the stn is within QC-pass set
-            if stn_id in data.gw_delta:
-                print("stn id pass")
-                # (2) check if cat is valid (model output exists)
-                if cat in cats:
-                    print("catchment modeled pass")
-                    fig = go.Figure()
+            # cumulative CFE change for catchment
+            cfe_elev_series = (
+                data.ds_ngen["NET_GW_CHANGE_METER"]
+                .sel({"catchment": cat})
+                .cumsum()
+                .to_pandas()
+            )
+            # get observation data for catchment
+            try:
+                well_obs_series = data.well_data[stn_id]
+                well_obs_series *= 0.3048  # UNIT feet to meter
+                first = well_obs_series.first_valid_index()
+                well_obs_series -= well_obs_series[first]
 
-                    # subset groundwater delta to df
-                    df_delta = pd.DataFrame(data.gw_delta[stn_id].iloc[:, 0])
-                    # print(f"{df=}")
-                    gw_min_index = df_delta.index.min()
-                    gw_max_index = df_delta.index.max()
+                fig = go.Figure()
 
-                    # subset ngen dataset by cat
-                    df_ng = (
-                        data.ds_ngen[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
-                        .sel({"catchment": cat})
-                        .to_pandas()
+                fig.add_trace(
+                    go.Scatter(
+                        x=cfe_elev_series.index,
+                        y=cfe_elev_series,
+                        mode="lines",
+                        name="CFE Simulated Groundwater Elevation Change",
                     )
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=well_obs_series.index,
+                        y=well_obs_series,
+                        mode="lines",
+                        name="Observed Groundwater Level Change",
+                    )
+                )
+                fig.update_layout(
+                    # width=100vh,
+                    # height=100vw,
+                    # autosize=True,
+                    # margin=dict(l=20, r=10, t=45, b=0),
+                    yaxis_title="Groundwater Elevation Change (meters)",
+                    # uirevision="Don't change",
+                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+                )
 
-                    df_ng = (
-                        df_ng[["DEEP_GW_TO_CHANNEL_FLUX", "SOIL_TO_GW_FLUX"]]
-                        # .resample("1MS")
-                        # .sum()
-                        .truncate(before=gw_min_index, after=gw_max_index)
-                    )
-
-                    fig.add_trace(
-                        go.Scatter(
-                            x=df_delta.index,
-                            y=df_delta.iloc[:, 0],
-                            mode="lines",
-                            name="Groundwater Distance Change (meters)",
-                        )
-                    )
-
-                    fig.add_trace(
-                        go.Scatter(
-                            x=df_ng.index,
-                            y=df_ng["SOIL_TO_GW_FLUX"],
-                            mode="lines",
-                            name="Soil to GW Flux (meters)",
-                        )
-                    )
-                    fig.update_layout(
-                        # width=100vh,
-                        # height=100vw,
-                        # autosize=True,
-                        # margin=dict(l=20, r=10, t=45, b=0),
-                        title={
-                            "text": "Monthly Groundwater Elevation Change & Soil To Groundwater Flux"
-                        },
-                        title_x=0.5,
-                        yaxis_title="Monthly Difference (meters)",
-                        # uirevision="Don't change",
-                        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-                    )
-                    # fig = px.line(df_ng)
-                    return fig
+                return fig
+            except:
+                return go.Figure()
 
     return go.Figure()
 

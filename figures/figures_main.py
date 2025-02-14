@@ -94,19 +94,19 @@ def mapbox_lines(
     )
 
     # Groundwell Location Markers
-    # fig.add_trace(
-    #     go.Scattermapbox(
-    #         lat=gdf_wells["lat"],
-    #         lon=gdf_wells["lon"],
-    #         mode="markers+text",  # You can also use 'markers' or 'text' alone
-    #         marker=go.scattermapbox.Marker(
-    #             size=6, color="white"  # You can change the marker color
-    #         ),
-    #         hovertext=gdf_wells["name"],  # Text labels for each point
-    #         customdata=gdf_wells["station_id_dendra"],
-    #         # hoverinfo="text",
-    #     )
-    # )
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=gdf_wells["lat"],
+            lon=gdf_wells["lon"],
+            mode="markers+text",  # You can also use 'markers' or 'text' alone
+            marker=go.scattermapbox.Marker(
+                size=6, color="white"  # You can change the marker color
+            ),
+            hovertext=gdf_wells["name"],  # Text labels for each point
+            customdata=gdf_wells["station_id_dendra"],
+            # hoverinfo="text",
+        )
+    )
 
     fig.update_traces(
         marker_line_width=0, marker_opacity=0, selector=dict(type="choropleth")
