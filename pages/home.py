@@ -34,6 +34,7 @@ import io
 import xarray as xr
 
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from figures import figures_main
 import data_loader
@@ -540,21 +541,36 @@ def update_modal_figure(click_data):
             ].values[0]
             print(f"{cat=}")
 
-            # cumulative CFE change for catchment
+            # 1. cumulative CFE change for catchment
             cfe_elev_series = (
                 data.ds_ngen["NET_GW_CHANGE_METER"]
                 .sel({"catchment": cat})
                 .cumsum()
                 .to_pandas()
             )
-            # get observation data for catchment
+            # 2. terraclim precip for catchment
+            ppt_series = (
+                data.terraclim["ppt"]
+                .loc[data.terraclim["ppt"]["divide_id"] == cat]["value"]
+                .loc["1982-10-01":]
+            )
             try:
+                # 3. get observation data for catchment
                 well_obs_series = data.well_data[stn_id]
                 well_obs_series *= 0.3048  # UNIT feet to meter
                 first = well_obs_series.first_valid_index()
                 well_obs_series -= well_obs_series[first]
 
-                fig = go.Figure()
+                fig = make_subplots(
+                    rows=2,
+                    cols=1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.02,
+                    # subplot_titles=[
+                    #     "Basin Total Precipitation (TerraClimate)",
+                    #     "Cumulative Change in Ground Water Storage",
+                    # ],
+                )
 
                 fig.add_trace(
                     go.Scatter(
@@ -562,7 +578,9 @@ def update_modal_figure(click_data):
                         y=cfe_elev_series,
                         mode="lines",
                         name="CFE Simulated Groundwater Elevation Change",
-                    )
+                    ),
+                    row=1,
+                    col=1,
                 )
                 fig.add_trace(
                     go.Scatter(
@@ -570,16 +588,37 @@ def update_modal_figure(click_data):
                         y=well_obs_series,
                         mode="lines",
                         name="Observed Groundwater Level Change",
-                    )
+                    ),
+                    row=1,
+                    col=1,
                 )
+                # precip
+                fig.add_trace(
+                    go.Scatter(
+                        x=ppt_series.index,
+                        y=ppt_series,
+                        mode="lines",
+                        name="Terraclim Precipitation (mm)",
+                    ),
+                    row=2,
+                    col=1,
+                )
+
                 fig.update_layout(
-                    # width=100vh,
-                    # height=100vw,
-                    # autosize=True,
-                    # margin=dict(l=20, r=10, t=45, b=0),
-                    yaxis_title="Groundwater Elevation Change (meters)",
-                    # uirevision="Don't change",
-                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+                    # yaxis=dict(title="Groundwater Elevation Change (meters)"),
+                    legend=dict(
+                        orientation="h",  # Horizontal orientation
+                        yanchor="bottom",  # Aligns legend to bottom
+                        y=-0.2,  # Moves legend below the plot (adjust this value as needed)
+                        xanchor="center",  # Center-aligns legend horizontally
+                        x=0.5,  # Centers the legend
+                    ),
+                    margin=dict(
+                        l=50,  # Left margin (reduce as needed)
+                        r=30,  # Right margin
+                        t=30,  # Top margin
+                        b=30,  # Bottom margin
+                    ),
                 )
 
                 return fig

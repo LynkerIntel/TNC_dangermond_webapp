@@ -83,15 +83,16 @@ class DataLoader:
         self.terraclim = self.get_s3_terraclim()
         self.tnc_domain_q = self.read_tnc_domain_q()
         self.cfe_q = self.cfe_basin_q()
+        self.well_data = self.get_s3_well_level()
 
         self.ds_ngen = self.ngen_dashboard_data(
             key="webapp_resources/ngen_validation_20241103_monthly.nc"
         )
-        self.gw_delta = self.monthly_gw_delta(
-            prefix="webapp_resources/monthly_gw_delta/"
-        )
+        # self.gw_delta = self.monthly_gw_delta(
+        #     prefix="webapp_resources/monthly_gw_delta/"
+        # )
 
-        # post-processing
+        # data processing and aggregation
         self.precip_stats()
         self.ngen_stats()
         self.ngen_gw_vol()
@@ -110,6 +111,15 @@ class DataLoader:
         with io.BytesIO(data) as src:
             gdf = gpd.read_file(src, driver=driver)
         return gdf
+
+    def get_s3_well_level(self) -> pd.DataFrame:
+        """
+        Load well data (raw)
+        """
+        df = self.pd_read_s3_parquet(
+            key="webapp_resources/gw_level_raw_hourly_feet.parquet"
+        )
+        return df
 
     def get_s3_cabcm(self) -> dict[pd.DataFrame]:
         """
@@ -410,55 +420,6 @@ class DataLoader:
         gdf["ID"] = "dangermond preserve"
         return gdf
 
-    # def precip_stats(self):
-    #     """
-    #     Parse historic water balance, or CFE results, to generate
-    #     key summary statistics for use in the dashboard, including
-    #     the text descriptions.
-
-    #     This should return data for all years, year specific logic
-    #     should go in `home.update_summary_text()`
-    #     """
-    #     # calculate mean rainfall (rain-year)
-    #     df = self.terraclim["ppt"]
-    #     # to monthly mean of all catchmens
-    #     domain_vals = df.groupby("date")["value"].mean()  # .reset_index()
-    #     self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index.year).sum()
-    #     self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1981":]
-
-    #     # Compute quartiles for precipitation accumulation
-    #     quartile = pd.qcut(
-    #         self.terraclim_ann_precip,
-    #         q=5,
-    #         labels=[
-    #             "a far below average",
-    #             "a below average",
-    #             "a near average",
-    #             "an above average",
-    #             "a far above average",
-    #         ],
-    #     )
-
-    #     # Attach quartiles as a DataFrame with precipitation values for reference
-    #     self.terraclim_ann_precip = pd.DataFrame(
-    #         {"Annual Precip (mm)": self.terraclim_ann_precip, "Quartile": quartile}
-    #     )
-
-    #     self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
-    #         "Annual Precip (mm)"
-    #     ].mean()
-
-    #     # sum of rain-year precip for `rain_year`
-    #     # ry_ppt_sum = domain_val[rain_year[0] : rain_year[1]].sum()
-
-    #     # mean annual change in storage (inflow - outflow)
-
-    #     # total precip (rain year)
-
-    #     # total annual inflow
-
-    #     # total
-
     def precip_stats(self):
         """
         Parse historic water balance, or CFE results, to generate
@@ -505,22 +466,25 @@ class DataLoader:
         """
         process and aggregate ngen simulation for visualizations
         """
-        df = pd.DataFrame()
-
-        df["DEEP_GW_TO_CHANNEL"] = (
-            self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"].mean("catchment").to_pandas()
+        self.ds_ngen["NET_GW_CHANGE_METER"] = (
+            self.ds_ngen["SOIL_TO_GW_FLUX"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"]
         )
-        df["SOIL_TO_GW_FLUX"] = (
-            self.ds_ngen["SOIL_TO_GW_FLUX"].mean("catchment").to_pandas()
-        )
-        df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
+        # df = pd.DataFrame()
 
-        df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
+        # df["DEEP_GW_TO_CHANNEL"] = (
+        #     self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"].mean("catchment").to_pandas()
+        # )
+        # df["SOIL_TO_GW_FLUX"] = (
+        #     self.ds_ngen["SOIL_TO_GW_FLUX"].mean("catchment").to_pandas()
+        # )
+        # df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
 
-        df *= 3.2808  # UNIT meters to feet
+        # df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
 
-        self.gw_net = df
-        self.gw_delta_yr = df.resample("YE").sum()
+        # df *= 3.2808  # UNIT meters to feet
+
+        # self.gw_net = df
+        # self.gw_delta_yr = df.resample("YE").sum()
 
     def ngen_gw_vol(self):
         """Calculate storage based on groundwater infiltration and outflow to channel"""
