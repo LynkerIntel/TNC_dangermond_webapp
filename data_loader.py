@@ -496,27 +496,21 @@ class DataLoader:
 
         dataset_catchments = self.ds_ngen["catchment"].values
 
-        # Filter the GeoDataFrame to include only catchments that exist in the dataset
+        #  only catchments that exist in the dataset
         catchment_areas = (
             self.gdf_lines.set_index("divide_id")
-            .loc[dataset_catchments, "areasqkm"]  # Select only relevant catchments
+            .loc[dataset_catchments, "areasqkm"]
             .dropna()  # Drop any missing values to avoid mismatches
         )
-
-        # Ensure the index name matches the dataset dimension name
         catchment_areas.index.name = "catchment"
-
         # Convert to an xarray DataArray with matching coordinates
         catchment_areas_xr = xr.DataArray(
             catchment_areas,
             coords={"catchment": catchment_areas.index},
             dims="catchment",
         )
-
-        # Add it to the dataset
         self.ds_ngen["areasqkm"] = catchment_areas_xr
 
-        # Ensure areasqkm is in the correct units (square feet)
         self.ds_ngen["area_sqft"] = self.ds_ngen["areasqkm"] * SQKM_TO_SQFT
 
         # compute total volume (ft³/month) for each catchment
@@ -531,34 +525,9 @@ class DataLoader:
             self.ds_ngen["SOIL_TO_GW_VOL"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_VOL"]
         )
 
-        # Convert NET_VOL to acre-feet
+        # NET_VOL to acre-feet
         self.ds_ngen["NET_VOL_ACRE_FT"] = self.ds_ngen["NET_VOL"] * FT3_TO_ACRE_FT
 
         self.ngen_basinwide_gw_storage = (
-            self.ds_ngen["NET_VOL_ACRE_FT"]
-            .sum(dim="catchment")
-            .cumsum()
-            .to_pandas()
-            # .resample("YE")
-            # .sum()
+            self.ds_ngen["NET_VOL_ACRE_FT"].sum(dim="catchment").cumsum().to_pandas()
         )
-
-
-# def text_description(self):
-#     """
-#     Generate a text description.
-
-#     Example:
-
-#     Last year was an average/above/below rain year with XX atmospheric rivers
-#     events delivering XX inches of precipitation. In 2022-23 rain-year we measured
-#     average XX inches of precipitation at XX weather stations XX times the
-#     average rainfall of XX inches.
-#     """
-#     return NotImplementedError
-#     description = (
-#         f"Last year was an average/above/below rain year with {n_ar}atmospheric rivers"
-#         "events delivering {annual_precip} inches of precipitation. In 2022-23 rain-year we measured"
-#         "average {} inches of precipitation at {} weather stations {} times the"
-#         "average rainfall of {} inches. "
-#     )
