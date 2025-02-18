@@ -30,10 +30,11 @@ def mapbox_lines(
         locations=gdf.index,
         opacity=1,
         color=display_var,
-        hover_data=["feature_id"],
+        hover_data=["divide_id"],
         center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
         mapbox_style="open-street-map",
         zoom=10.3,
+        custom_data=["divide_id"],  # Add your fields
     )
 
     # add dandgermond outline
@@ -73,7 +74,7 @@ def mapbox_lines(
     #             size=6, color="white"  # You can change the marker color
     #         ),
     #         hovertext=gdf_wells["name"],  # Text labels for each point
-    #         customdata=gdf_wells["station_id_dendra"],
+    #         customdata=gdf_wells["station_id_dendra"].to_numpy(),
     #         # hoverinfo="text",
     #     )
     # )
@@ -118,6 +119,7 @@ def mapbox_lines(
         showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
+        # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
@@ -215,6 +217,7 @@ def precip_bar_fig(data):
             "Basin Total Precipitation (TerraClimate)",
             "Cumulative Change in Ground Water Storage",
         ],
+        vertical_spacing=0.15,
     )
 
     # First plot: Annual Precipitation Bar Chart with Quartile Colors
@@ -282,27 +285,207 @@ def precip_bar_fig(data):
     return fig
 
 
-# def gw_bar_fig(data):
-#     """Demo groundwater bar chart fig"""
-#     # Create the bar chart
+def plot_q_out(data, cat_id):
+    """Plot streamflow for a selected catchment."""
+    df_nf_cat = data.df_nf[data.df_nf["divide_id"] == cat_id][["weighted_tnc_flow"]]
+    df_ng = pd.DataFrame(data.ds_ngen["Q_OUT"].sel({"catchment": cat_id}).to_pandas())
 
-#     fig = px.line(
-#         data.ngen_basinwide_gw_storage,
-#         title="Change in Groundwater Storage",
-#         labels={"index": "Date", "value": "(acre-feet)"},
-#         template="plotly_white",
-#     )
+    fig = px.line(df_nf_cat, title="Streamflow Comparison")
 
-#     # Center the title
-#     fig.update_layout(
-#         title={
-#             "text": "Change in Groundwater Storage",  # Title text
-#             "x": 0.5,  # Centers the title
-#             "xanchor": "center",  # Anchors the title in the center
-#         }
-#     )
+    fig.add_trace(
+        go.Scatter(
+            x=df_ng.index,
+            y=df_ng.iloc[:, 0],
+            mode="lines",
+            name="CFE Streamflow",
+        )
+    )
 
-#     # fig.update_layout(
-#     #     margin=dict(l=10, r=10, t=0, b=10),  # Set bottom margin (b) to 10 pixels
-#     # )
-#     return fig
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: Streamflow"},
+        title_x=0.5,
+        yaxis_title="m³/s",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+    )
+
+    return fig
+
+
+def plot_actual_et(data, cat_id):
+    """Plot Actual Evapotranspiration (AET) for a selected catchment."""
+    df_aet = data.df_cabcm["aet"]
+    df_sub = df_aet[df_aet["divide_id"] == cat_id]
+
+    fig = px.line(df_sub[["value"]])
+    fig.update_traces(name="CABCM", showlegend=True)
+
+    df_ng = (
+        pd.DataFrame(data.ds_ngen["ACTUAL_ET"].sel({"catchment": cat_id}).to_pandas())
+        * 1000  # UNIT: m/month to mm/month
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_ng.index,
+            y=df_ng.iloc[:, 0],
+            mode="lines",
+            name="CFE AET",
+        )
+    )
+
+    fig.update_layout(
+        yaxis_title="millimeters",
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: AET"},
+        title_x=0.5,
+        uirevision="Don't change",
+        plot_bgcolor="white",
+    )
+
+    return fig
+
+
+def plot_default(data):
+    """Plot default basin streamflow (monthly volume) when no catchment is selected."""
+    fig = px.line(data.cfe_q["flow"])
+
+    fig.add_trace(
+        go.Scatter(
+            x=data.tnc_domain_q.index,
+            y=data.tnc_domain_q["monthly_vol_m3"],
+            mode="lines",
+            name="Natural Flows",
+        )
+    )
+
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Basin Streamflow (Monthly Volume)"},
+        title_x=0.5,
+        yaxis_title="Monthly Volume (cubic meters)",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+    )
+
+    return fig
+
+
+def plot_recharge(data, cat_id):
+    """ """
+
+
+def annual_mean(data):
+    """ """
+    monthly_mean_by_year = data.ngen_basinwide_input_m3.groupby(
+        data.ngen_basinwide_input_m3.index.month
+    ).mean()
+    monthly_mean_by_year.index = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
+    monthly_mean_by_year *= 0.000810714  # UNIT: m^3 to acre-feet
+
+    # mean inflow for all years
+    df_input = pd.DataFrame(data.ngen_basinwide_input_m3)
+    df_input["water_year"] = df_input.index.map(data.water_year)
+
+    mean_input_all_years = df_input.groupby("water_year").sum().mean()
+    mean_input_all_years *= 0.000810714  # UNIT: m^3 to acre-feet
+
+    # mean outflow for all years
+    df_et = pd.DataFrame(data.ngen_basinwide_et_loss_m3)
+    df_et["water_year"] = df_et.index.map(data.water_year)
+    et_wy = df_et.groupby("water_year").sum()
+
+    # get basinwide Q from routed flows attribute
+    q_out = data.cfe_q.groupby("water_year").sum()
+
+    mean_et = et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714  # Convert to acre-feet
+    mean_q_out = q_out["flow"].mean() * 0.000810714  # Convert to acre-feet
+
+    # # combine et and outflow
+    # total_outflow = et["ACTUAL_ET_VOL_M3"] + q_out["flow"]  # total outflow sum by WY
+    # mean_basin_outflow_all_years = total_outflow.mean()  # mean for all years
+    # mean_basin_outflow_all_years *= 0.000810714  # UNIT: m^3 to acre-feet
+
+    # make figure
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        # shared_xaxes=True,
+        # subplot_titles=[
+        #     "Basin Total Precipitation (TerraClimate)",
+        #     "Cumulative Change in Ground Water Storage",
+        # ],
+        subplot_titles=[
+            "Mean Basin Inflow Volume by Month",
+            "Total Inflow/Outflow Mean",
+        ],
+        horizontal_spacing=0.15,
+    )
+    fig.add_trace(
+        go.Bar(
+            x=monthly_mean_by_year.index,
+            y=monthly_mean_by_year,
+            # marker=dict(color=bar_colors),
+            name="Annual Inflow Volume (acre-feet)",
+            showlegend=False,
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Bar(
+            x=["Inflow"],
+            y=mean_input_all_years,
+            # marker=dict(color=bar_colors),
+            name="Annual Inflow Volume (acre-feet)",
+            marker={"color": "#636efa"},
+            showlegend=False,
+        ),
+        row=1,
+        col=2,
+    )
+    # Add stacked bar for outflows (Q_OUT + ET) under "Outflow"
+    fig.add_trace(
+        go.Bar(
+            x=["Outflow"],
+            y=[mean_q_out],
+            name="Streamflow (Q_OUT)",
+            # marker=dict(color="#636efa"),
+        ),
+        row=1,
+        col=2,
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=["Outflow"],
+            y=[mean_et],
+            name="Evapotranspiration (ET)",
+            # marker=dict(color="#EF553B"),
+        ),
+        row=1,
+        col=2,
+    )
+
+    # Update layout to stack bars properly
+    fig.update_layout(
+        barmode="stack",  # Enable stacking
+        yaxis=dict(title="Inflow (acre-feet)"),
+        yaxis2=dict(title="Outflow (acre-feet)"),
+        plot_bgcolor="white",
+    )
+    return fig

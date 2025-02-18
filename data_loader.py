@@ -244,7 +244,9 @@ class DataLoader:
         df = self.pd_read_s3_parquet(
             key="webapp_resources/cfe_20241103_troute_cat23.parquet"
         )
-        return df[["flow"]]
+        df = df.loc["1982-10-01":]
+        df["water_year"] = df.index.map(self.water_year)
+        return df[["flow", "water_year"]]
 
     def ngen_csv_to_df(
         self,
@@ -408,6 +410,13 @@ class DataLoader:
         df = df[["monthly_vol_m3"]]
         return df
 
+    @staticmethod
+    def water_year(date: pd.DatetimeTZDtype):
+        """
+        Convert date to WY
+        """
+        return date.year if date.month < 10 else date.year + 1
+
     def get_outline(self) -> gpd.GeoDataFrame:
         """
         Reads the outline data from the data directory.
@@ -433,7 +442,7 @@ class DataLoader:
         df = self.terraclim["ppt"]
 
         # Create a new column for water year
-        df["water_year"] = df.index.year.where(df.index.month < 10, df.index.year + 1)
+        df["water_year"] = df.index.map(self.water_year)
 
         # Group by water year and calculate annual precipitation totals
         domain_vals = df.groupby("water_year")["value"].mean()
@@ -469,22 +478,28 @@ class DataLoader:
         self.ds_ngen["NET_GW_CHANGE_METER"] = (
             self.ds_ngen["SOIL_TO_GW_FLUX"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"]
         )
-        # df = pd.DataFrame()
 
-        # df["DEEP_GW_TO_CHANNEL"] = (
-        #     self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"].mean("catchment").to_pandas()
-        # )
-        # df["SOIL_TO_GW_FLUX"] = (
-        #     self.ds_ngen["SOIL_TO_GW_FLUX"].mean("catchment").to_pandas()
-        # )
-        # df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
+    # def get_historic(self):
+    #     """
+    #     Calculate stats for entire water balance period
+    #     """
+    #     self.ds_ngen
+    #     # df = pd.DataFrame()
 
-        # df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
+    #     # df["DEEP_GW_TO_CHANNEL"] = (
+    #     #     self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"].mean("catchment").to_pandas()
+    #     # )
+    #     # df["SOIL_TO_GW_FLUX"] = (
+    #     #     self.ds_ngen["SOIL_TO_GW_FLUX"].mean("catchment").to_pandas()
+    #     # )
+    #     # df["SOIL_STORAGE"] = self.ds_ngen["SOIL_STORAGE"].mean("catchment").to_pandas()
 
-        # df *= 3.2808  # UNIT meters to feet
+    #     # df["net"] = df["SOIL_TO_GW_FLUX"] - df["DEEP_GW_TO_CHANNEL"]
 
-        # self.gw_net = df
-        # self.gw_delta_yr = df.resample("YE").sum()
+    #     # df *= 3.2808  # UNIT meters to feet
+
+    #     # self.gw_net = df
+    #     # self.gw_delta_yr = df.resample("YE").sum()
 
     def ngen_gw_vol(self):
         """Calculate storage based on groundwater infiltration and outflow to channel"""
@@ -530,4 +545,25 @@ class DataLoader:
 
         self.ngen_basinwide_gw_storage = (
             self.ds_ngen["NET_VOL_ACRE_FT"].sum(dim="catchment").cumsum().to_pandas()
+        )
+
+        # ---------------------------------
+        # calculate inflow (precip volume)
+        # ds_ngen has been resampled to monthly, using "sum"
+        self.ds_ngen["PRECIP_VOL_M3"] = self.ds_ngen["RAIN_RATE"] * (
+            self.ds_ngen["areasqkm"] * 1000000
+        )  # UNIT: sq_km to sq_m
+
+        self.ngen_basinwide_input_m3 = (
+            self.ds_ngen["PRECIP_VOL_M3"].sum(dim="catchment").to_pandas()
+        )
+
+        # ---------------------------------
+        # calculate ET loss
+        self.ds_ngen["ACTUAL_ET_VOL_M3"] = self.ds_ngen["ACTUAL_ET"] * (
+            self.ds_ngen["areasqkm"] * 1000000
+        )  # UNIT: sq_km to sq_m
+
+        self.ngen_basinwide_et_loss_m3 = (
+            self.ds_ngen["ACTUAL_ET_VOL_M3"].sum(dim="catchment").to_pandas()
         )

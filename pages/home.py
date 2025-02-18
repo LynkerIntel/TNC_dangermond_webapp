@@ -63,9 +63,10 @@ cats = data.ds_ngen["catchment"].to_pandas().to_list()
 fig = go.Figure()
 
 
-# map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
+# map_fig = figures_main.mapbox_lines(data.gdf, data.gdf_outline, data.gdf)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 precip_bar_fig = figures_main.precip_bar_fig(data)
+summary_data_fig = figures_main.annual_mean(data)
 # gw_bar_fig = figures_main.gw_bar_fig(data)
 
 
@@ -208,8 +209,12 @@ layout = html.Div(
                                                 {"label": col, "value": col}
                                                 for col in [
                                                     "SOIL_STORAGE",
+                                                    "POTENTIAL_ET",
                                                     "ACTUAL_ET",
                                                     "Q_OUT",
+                                                    "NET_VOL_ACRE_FT",
+                                                    "NET_GW_CHANGE_METER",
+                                                    "RAIN_RATE",
                                                 ]
                                             ],
                                             value="Q_OUT",  # Default value
@@ -272,7 +277,7 @@ layout = html.Div(
                                             children="Loading data...",
                                             style={
                                                 "padding": "0.5rem",
-                                                "font-size": "14px",
+                                                # "font-size": "14px",
                                             },
                                         ),
                                     ]
@@ -316,7 +321,7 @@ layout = html.Div(
                     lg=3,
                     className="ml-3 mt-0",
                     style={
-                        "background-color": "#f0f0f0",
+                        # "background-color": "#f0f0f0",
                         # "padding": "20 20 20 20",
                         # "margin": "10 10 10 10",
                     },
@@ -352,7 +357,7 @@ layout = html.Div(
                                 ],
                             ),
                             dcc.Loading(
-                                id="loading-spinner-wb_ts",
+                                id="loading-spinner-precip-bar",
                                 delay_show=100,
                                 type="default",
                                 children=[
@@ -360,6 +365,19 @@ layout = html.Div(
                                         # id="bar_fig"
                                         figure=precip_bar_fig,
                                         style={"height": "70vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
+                            ),
+                            dcc.Loading(
+                                id="loading-spinner-summary-fig",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        # id="bar_fig"
+                                        figure=summary_data_fig,
+                                        style={"height": "50vh"},
                                         config={"displaylogo": False},
                                     ),
                                 ],
@@ -399,7 +417,7 @@ layout = html.Div(
                     ),
                     style={
                         # "backgroundColor": "#cccccc",
-                        "border-radius": "5px",
+                        # "border-radius": "5px",
                         # "overflow-x": "hidden",
                     },  # dbc.Col style
                     class_name="mr-3",
@@ -465,6 +483,7 @@ def mapbox_lines(display_var, time_click):
     """
     print(display_var)
     print(time_click)
+
     return figures_main.mapbox_lines(
         gdf=data.gdf,
         gdf_outline=data.gdf_outline,
@@ -510,7 +529,11 @@ def update_modal_content(click_data):
         layer = click_data["points"][0]["curveNumber"]
         if layer == 3:
             well_name = click_data["points"][0]["hovertext"]
-            return f"Groundwater Comparison: {well_name}"
+            stn_id = click_data["points"][0]["customdata"]
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
+                "divide_id"
+            ].values[0]
+            return f"Groundwater Comparison: {well_name} & catchment '{cat}'"
     return ""
 
 
@@ -619,6 +642,8 @@ def update_modal_figure(click_data):
                         t=30,  # Top margin
                         b=30,  # Bottom margin
                     ),
+                    yaxis=dict(title="change in  (m)"),
+                    yaxis2=dict(title="Precip (mm)"),
                 )
 
                 return fig
@@ -640,153 +665,21 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
     """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
-        if layer == 0:  # click must be on polyogn layer
-            id = click_data["points"][0]["customdata"][0]
+        if layer == 0:  # click must be on polygon layer
+            cat_id = click_data["points"][0]["customdata"][0]
+            # print(click_data)
+
             if model_var == "Q_OUT":
-                # id = id_click["points"][0]["customdata"][0]
-                # print(f"{cat=}")
-
-                # load natural flows
-                df_nf_cat = data.df_nf[data.df_nf["divide_id"] == id][
-                    ["weighted_tnc_flow"]
-                ]
-
-                # subset routed NextGen flows by cat
-                df_ng = pd.DataFrame(
-                    data.ds_ngen["Q_OUT"].sel({"catchment": f"cat-{id}"}).to_pandas()
-                )
-                # print(f"{df_ng=}")
-
-                fig = px.line(df_nf_cat, title="test")
-
-                # plot Q_OUT for catchment
-                fig.add_trace(
-                    go.Scatter(
-                        x=df_ng.index,
-                        y=df_ng.iloc[:, 0],
-                        mode="lines",
-                        name="CFE Streamflow",
-                    )
-                )
-
-                fig.update_layout(
-                    # width=100vh,
-                    # height=100vw,
-                    autosize=True,
-                    # margin=dict(l=20, r=10, t=45, b=0),
-                    title={"text": f"Catchment - {id}: Streamflow"},
-                    title_x=0.5,
-                    yaxis_title="m3/s",
-                    uirevision="Don't change",
-                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-                )
-
-                # add model output discharge
-
-                fig.update_layout(plot_bgcolor="white")
-                # Reduce bottom margin
-                # fig.update_layout(
-                #     margin=dict(
-                #         l=10, r=10, t=30, b=10
-                #     ),  # Set bottom margin (b) to 10 pixels
-                # )
-                # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-                # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-
-                return fig
+                return figures_main.plot_q_out(data, cat_id)
 
             if model_var == "ACTUAL_ET":
-                # create fig of catchment AET vs. CBACM AET
-                print("plotting AET")
-                print(f"{stored_cat_click=}")
+                print("returning et plot")
+                return figures_main.plot_actual_et(data, cat_id)
 
-                # if no basin has been selected previously,
-                # use current click callback.
-                if not stored_cat_click:
-                    stored_cat_click = [id]
+            # if model_var == "Recharge":
+            #     return figures_main.plot_recharge(data, cat_id)
 
-                # CABCM
-                df_aet = data.df_cabcm["aet"]
-                df_sub = df_aet[df_aet["divide_id"] == f"cat-{stored_cat_click[0]}"]
-                fig = px.line(df_sub[["value"]])
-                fig.update_traces(name="CABCM", showlegend=True)
-
-                # NGEN AET
-                df_ng = (
-                    pd.DataFrame(
-                        data.ds_ngen["ACTUAL_ET"]
-                        .sel({"catchment": f"cat-{stored_cat_click[0]}"})
-                        .to_pandas()
-                    )
-                    * 1000  # UNIT: m/month to mm/month
-                )
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=df_ng.index,
-                        y=df_ng.iloc[:, 0],  # UNIT
-                        mode="lines",
-                        name="CFE AET",
-                    )
-                )
-                fig.update_layout(
-                    yaxis_title="millimeters",
-                    # width=100vh,
-                    # height=100vw,
-                    autosize=True,
-                    # margin=dict(l=20, r=10, t=45, b=0),
-                    title={"text": f"Catchment - {id}: AET"},
-                    title_x=0.5,
-                    uirevision="Don't change",
-                    # yaxis_title = "millimeters",
-                    # y_label="test",
-                    # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-                )
-
-                # fig.update_layout(
-                #     margin=dict(
-                #         l=10, r=10, t=30, b=10
-                #     ),  # Set bottom margin (b) to 10 pixels
-                # )
-
-                fig.update_layout(
-                    yaxis_title="millimeters",
-                )
-
-                return fig
-
-    # if no catchment is selected, timeseries should be full domain
-    else:
-        # df_nf_domain = df_nf[df_nf["divide_id"] == 50000200160223]
-        # fig = px.line(data.df_q)
-        fig = px.line(data.cfe_q)
-
-        fig.add_trace(
-            go.Scatter(
-                x=data.tnc_domain_q.index,
-                y=data.tnc_domain_q["monthly_vol_m3"],
-                mode="lines",
-                name="Natural Flows",
-            )
-        )
-        fig.update_layout(plot_bgcolor="white")
-        fig.update_layout(
-            # width=100vh,
-            # height=100vw,
-            autosize=True,
-            # margin=dict(l=20, r=10, t=45, b=0),
-            title={"text": f"Basin Streamflow (Monthly Volume)"},
-            title_x=0.5,
-            yaxis_title="Monthly Volume (cubic meters)",
-            uirevision="Don't change",
-            # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-        )
-
-        # fig.update_layout(
-        #     margin=dict(l=10, r=10, t=10, b=0),  # Set bottom margin (b) to 10 pixels
-        # )
-
-        return fig
+    return figures_main.plot_default(data)
 
 
 @callback(
@@ -801,13 +694,14 @@ def higlight_line_segment_on_map(click_data):
     """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
+        # print(f"layer: {layer}")
 
         if layer == 0:
             id = click_data["points"][0]["customdata"][0]
             patched_figure = Patch()
 
             # print(id)
-            subset = data.gdf[data.gdf["feature_id"] == id]
+            subset = data.gdf[data.gdf["divide_id"] == id]
             # print(subset)
 
             # if geometry is a LINESTRING
@@ -823,10 +717,10 @@ def higlight_line_segment_on_map(click_data):
                 lon=catchment_lons,
                 mode="lines",
                 hoverinfo="skip",
-                # line=dict(
-                #     width=3,
-                #     color="white",
-                # ),
+                line=dict(
+                    width=3,
+                    color="white",
+                ),
                 # hovertext=gdf_cat["divide_id"].tolist(),
             )
 
@@ -846,6 +740,7 @@ def store_catchment_click(click_data):
         layer = click_data["points"][0]["curveNumber"]
         print(f"{layer=}")
         if layer == 0:
+            print(click_data)
             cat_id = click_data["points"][0]["customdata"]
             print(cat_id)
             return cat_id
@@ -915,7 +810,7 @@ def update_table(selected_date):
         responsive=True,  # Make table responsive
         size="sm",  # Small size for a more compact look
         style={
-            "border-radius": "5px",  # Rounded corners
+            # "border-radius": "5px",  # Rounded corners
             "overflow": "hidden",  # Ensure borders and rounding apply smoothly
         },
     )
@@ -963,12 +858,12 @@ def update_summary_text(selected_year):
     #     return f"In {water_year}, precipitation data is unavailable."
 
     # Convert from millimeters to inches (if needed)
-    total_precip_inches = total_precip * 0.0393701  # mm to inches
+    # total_precip_inches = total_precip * 0.0393701  # mm to inches
 
     # Format text output
     summary_text = (
         f"{selected_year} was {precip_quartile} rain year, with a total of "
-        f"{total_precip_inches:.1f} inches of precipitation in the preserve. "
+        f"{total_precip:.1f} inches of precipitation in the preserve. "
         f"This was {precip_magnitude:.1f} times {precip_sign} than normal."
     )
 
