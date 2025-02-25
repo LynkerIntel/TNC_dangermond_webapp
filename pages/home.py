@@ -67,6 +67,7 @@ fig = go.Figure()
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
 precip_bar_fig = figures_main.precip_bar_fig(data)
 summary_data_fig = figures_main.annual_mean(data)
+
 # gw_bar_fig = figures_main.gw_bar_fig(data)
 
 
@@ -390,10 +391,17 @@ layout = html.Div(
                                     ),
                                     dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalBody(
-                                        dcc.Graph(
-                                            id="modal-figure",
-                                            figure=fig,
-                                        )  # Include the figure inside the modal
+                                        dcc.Loading(
+                                            id="loading-spinner-model",
+                                            delay_show=100,
+                                            type="default",
+                                            children=[
+                                                dcc.Graph(
+                                                    id="modal-figure",
+                                                    figure=fig,
+                                                )  # Include the figure inside the modal
+                                            ],
+                                        )
                                     ),
                                     dbc.ModalFooter(
                                         dbc.Button(
