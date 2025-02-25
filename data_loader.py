@@ -95,7 +95,7 @@ class DataLoader:
         # data processing and aggregation
         self.precip_stats()
         self.ngen_stats()
-        self.ngen_gw_vol()
+        self.ngen_vol_stats()
 
     def pd_read_s3_parquet(self, key, **args):
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
@@ -217,36 +217,18 @@ class DataLoader:
         Returns:
             DataFrame: Simulated monthly volume.
         """
-        # v1
-        # df = self.pd_read_s3_csv(
-        #     key="ngen_dr/cfe_calib_valid_2024_10_07/output_sim_obs/sim_obs_validation.csv",
-        # )
-        # df.index = pd.to_datetime(df["time"])
-        # df = df[["sim_flow"]]
-        # # Convert daily streamflow (m³/s) to volume per day (m³/day)
-        # df["Simulated Monthly Volume"] = (
-        #     df["sim_flow"] * 86400  # UNIT
-        # )  # 86400 seconds in a day
-        # df = df.resample("MS").sum()
-        # return df[["Simulated Monthly Volume"]]
-
-        # v2
-        # ds = xr.open_dataset(
-        #     "/Users/dillonragar/data/tnc/cfe_valid_2024_11_03/output_300/troute_output_198109300000.nc"
-        # )
-
-        # df = ds.sel({"feature_id": 23})["flow"].to_pandas()
-        # df *= 3600
-        # df = df.resample("MS").sum()
-
-        # df_out = pd.DataFrame(df)
-
         df = self.pd_read_s3_parquet(
             key="webapp_resources/cfe_20241103_troute_cat23.parquet"
         )
         df = df.loc["1982-10-01":]
         df["water_year"] = df.index.map(self.water_year)
         return df[["flow", "water_year"]]
+
+    def calculate_basin_q_stats(self):
+        """
+        Calculate Jalema Creek
+        """
+        # self.jalema_creek_mean =
 
     def ngen_csv_to_df(
         self,
@@ -437,16 +419,25 @@ class DataLoader:
 
         This should return data for all years, year-specific logic
         should go in `home.update_summary_text()`.
+
+        UNIT: precip -> inches
         """
         # Access precipitation data
-        df = self.terraclim["ppt"]
+        df = self.terraclim["ppt"].copy()
+        df["value"] = df["value"] * 0.0393701  # UNIT: mm to inch
+        # mean of cats for each timestep
+        cat_mean = df.groupby(df.index)[["value"]].mean()
+        # assign water year to subset df, which is monthly
+        cat_mean["water_year"] = cat_mean.index.map(self.water_year)
 
-        # Create a new column for water year
-        df["water_year"] = df.index.map(self.water_year)
+        # # Create a new column for water year
+        # df["water_year"] = df.index.map(self.water_year)
 
-        # Group by water year and calculate annual precipitation totals
-        domain_vals = df.groupby("water_year")["value"].mean()
-        self.terraclim_ann_precip = domain_vals.groupby(domain_vals.index).sum()
+        # # Group by water year and calculate annual precipitation totals
+        # domain_vals = df.groupby("water_year")["value"].mean()
+
+        # sum months to get annual data for each water year
+        self.terraclim_ann_precip = cat_mean.groupby("water_year")["value"].sum()
         self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1982":]
 
         # Compute quartiles for precipitation accumulation
@@ -464,11 +455,11 @@ class DataLoader:
 
         # Attach quartiles as a DataFrame with precipitation values for reference
         self.terraclim_ann_precip = pd.DataFrame(
-            {"Annual Precip (mm)": self.terraclim_ann_precip, "Quartile": quartile}
+            {"wy_precip_inch": self.terraclim_ann_precip, "Quartile": quartile}
         )
 
         self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
-            "Annual Precip (mm)"
+            "wy_precip_inch"
         ].mean()
 
     def ngen_stats(self):
@@ -501,7 +492,7 @@ class DataLoader:
     #     # self.gw_net = df
     #     # self.gw_delta_yr = df.resample("YE").sum()
 
-    def ngen_gw_vol(self):
+    def ngen_vol_stats(self):
         """Calculate storage based on groundwater infiltration and outflow to channel"""
         # Get the list of catchments present in the dataset
         # Conversion factor from cubic feet to acre-feet
