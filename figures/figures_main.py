@@ -119,6 +119,7 @@ def mapbox_lines(
         showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
+        # paper_bgcolor="#f4f4f4",
         # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
@@ -195,7 +196,7 @@ def precip_bar_fig(data):
     """
 
     # Calculate the mean precipitation value
-    mean_value = data.terraclim_ann_precip["Annual Precip (mm)"].mean()
+    mean_value = data.terraclim_ann_precip["wy_precip_inch"].mean()
 
     quartile_colors = {
         "a far below average": "#E69F00",
@@ -224,7 +225,7 @@ def precip_bar_fig(data):
     fig.add_trace(
         go.Bar(
             x=data.terraclim_ann_precip.index,
-            y=data.terraclim_ann_precip["Annual Precip (mm)"],
+            y=data.terraclim_ann_precip["wy_precip_inch"],
             marker=dict(color=bar_colors),
             name="Annual Precipitation",
             showlegend=False,
@@ -237,7 +238,7 @@ def precip_bar_fig(data):
     fig.add_trace(
         go.Scatter(
             x=data.terraclim_ann_precip.index,
-            y=[mean_value] * len(data.terraclim_ann_precip["Annual Precip (mm)"]),
+            y=[mean_value] * len(data.terraclim_ann_precip["wy_precip_inch"]),
             mode="lines",
             name=f"Mean: {mean_value:.2f}",
             line=dict(color="gray", width=1),
@@ -275,11 +276,14 @@ def precip_bar_fig(data):
         barmode="stack",
         xaxis=dict(title="Water Year"),
         # xaxis2=dict(title="Year"),
-        yaxis=dict(title="Precipitation (mm)"),
+        yaxis=dict(title="Precipitation (inches)"),
         yaxis2=dict(title="(acre-feet)"),
         # legend=dict(title="Legend"),
         template="plotly_white",
         height=800,
+        margin=dict(l=50, r=50, t=30, b=40),  # Reduced top/bottom margin
+        paper_bgcolor="#f4f4f4",
+        plot_bgcolor="#f4f4f4",
     )
 
     return fig
@@ -308,6 +312,14 @@ def plot_q_out(data, cat_id):
         yaxis_title="m³/s",
         uirevision="Don't change",
         plot_bgcolor="white",
+        xaxis_title="",
+        legend=dict(
+            orientation="h",  # Make legend horizontal
+            yanchor="top",
+            y=-0.2,  # Move below the plot (adjust if needed)
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
     )
 
     return fig
@@ -342,6 +354,14 @@ def plot_actual_et(data, cat_id):
         title_x=0.5,
         uirevision="Don't change",
         plot_bgcolor="white",
+        xaxis_title="",
+        legend=dict(
+            orientation="h",  # Make legend horizontal
+            yanchor="top",
+            y=-0.2,  # Move below the plot (adjust if needed)
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
     )
 
     return fig
@@ -350,6 +370,7 @@ def plot_actual_et(data, cat_id):
 def plot_default(data):
     """Plot default basin streamflow (monthly volume) when no catchment is selected."""
     fig = px.line(data.cfe_q["flow"])
+    fig.data[0].name = "CFE Q"  # manually set name
 
     fig.add_trace(
         go.Scatter(
@@ -367,7 +388,19 @@ def plot_default(data):
         yaxis_title="Monthly Volume (cubic meters)",
         uirevision="Don't change",
         plot_bgcolor="white",
+        xaxis_title="",
+        legend_title_text="",
+        # paper_bgcolor="#f4f4f4",
+        legend=dict(
+            orientation="h",  # Make legend horizontal
+            yanchor="top",
+            y=-0.2,  # Move below the plot (adjust if needed)
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
     )
+    # fig.update_xaxes(gridcolor="#f4f4f4")
+    # fig.update_yaxes(gridcolor="#f4f4f4")
 
     return fig
 
@@ -431,7 +464,7 @@ def annual_mean(data):
         # ],
         subplot_titles=[
             "Mean Basin Inflow Volume by Month",
-            "Total Inflow/Outflow Mean",
+            "Mean Annual Inflow/Outflow",
         ],
         horizontal_spacing=0.15,
     )
