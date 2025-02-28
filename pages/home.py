@@ -574,21 +574,25 @@ def update_modal_figure(click_data):
 
             # 1. cumulative CFE change for catchment
             cfe_elev_series = (
-                data.ds_ngen["NET_GW_CHANGE_METER"]
+                data.ds_ngen["NET_GW_CHANGE_FEET"]
                 .sel({"catchment": cat})
                 .cumsum()
                 .to_pandas()
             )
             # 2. terraclim precip for catchment
-            ppt_series = (
-                data.terraclim["ppt"]
-                .loc[data.terraclim["ppt"]["divide_id"] == cat]["value"]
-                .loc["1982-10-01":]
+            # ppt_series = (
+            #     data.terraclim["ppt"]
+            #     .loc[data.terraclim["ppt"]["divide_id"] == cat]["value"]
+            #     .loc["1982-10-01":]
+            # )
+            # 2. precip forcing for catchment
+            ppt_aorc = (
+                data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
             )
+
             try:
                 # 3. get observation data for catchment
                 well_obs_series = data.well_data[stn_id]
-                well_obs_series *= 0.3048  # UNIT feet to meter
                 first = well_obs_series.first_valid_index()
                 well_obs_series -= well_obs_series[first]
 
@@ -626,10 +630,10 @@ def update_modal_figure(click_data):
                 # precip
                 fig.add_trace(
                     go.Scatter(
-                        x=ppt_series.index,
-                        y=ppt_series,
+                        x=ppt_aorc.index,
+                        y=ppt_aorc,
                         mode="lines",
-                        name="Terraclim Precipitation (mm)",
+                        name="Precipitation Forcing (inches)",
                     ),
                     row=2,
                     col=1,
@@ -650,8 +654,8 @@ def update_modal_figure(click_data):
                         t=30,  # Top margin
                         b=30,  # Bottom margin
                     ),
-                    yaxis=dict(title="change in  (m)"),
-                    yaxis2=dict(title="Precip (mm)"),
+                    yaxis=dict(title="Water Level Change (feet)"),
+                    yaxis2=dict(title="Precipitation (inch)"),
                 )
 
                 return fig
@@ -773,11 +777,11 @@ def update_table(selected_date):
 
     # Get the volume for the selected month (for the specific year)
     # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
-    selected_month_value = data.tnc_domain_q.loc[selected_date, "monthly_vol_m3"]
+    selected_month_value = data.tnc_domain_q.loc[selected_date, "monthly_vol_af"]
 
     # Calculate the average volume for that month across all years
     # average_value = selected_month_df["Simulated Monthly Volume"].mean()
-    average_value = selected_month_df["monthly_vol_m3"].mean()
+    average_value = selected_month_df["monthly_vol_af"].mean()
 
     # Calculate the "% of average" for the selected month
     percent_of_average = (selected_month_value / average_value) * 100
@@ -799,12 +803,12 @@ def update_table(selected_date):
                     ),  # Month Year
                     html.Tr(
                         [
-                            html.Td("Monthly Volume (m³)"),
+                            html.Td("Monthly Volume (af)"),
                             html.Td(formatted_selected_value),
                         ]
                     ),  # Selected month value
                     html.Tr(
-                        [html.Td("Avg Volume (m³)"), html.Td(formatted_average_value)]
+                        [html.Td("Avg Volume (af)"), html.Td(formatted_average_value)]
                     ),  # Average value for month
                     html.Tr(
                         [html.Td("% of Avg"), html.Td(formatted_percent_of_average)]
@@ -842,9 +846,7 @@ def update_summary_text(selected_year):
 
     # Get total precipitation for the selected water year (example dataset key)
     if hasattr(data, "terraclim_ann_precip"):
-        total_precip = data.terraclim_ann_precip["Annual Precip (mm)"].loc[
-            selected_year
-        ]
+        total_precip = data.terraclim_ann_precip["wy_precip_inch"].loc[selected_year]
         precip_quartile = data.terraclim_ann_precip["Quartile"].loc[selected_year]
     else:
         total_precip = None

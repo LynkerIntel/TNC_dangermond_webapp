@@ -219,7 +219,8 @@ class DataLoader:
         """
         df = self.pd_read_s3_parquet(
             key="webapp_resources/cfe_20241103_troute_cat23.parquet"
-        )
+        )  # UNIT: VOL m^3
+        df["flow"] *= 0.000810714  # UNIT: m^3 to acre-feet
         df = df.loc["1982-10-01":]
         df["water_year"] = df.index.map(self.water_year)
         return df[["flow", "water_year"]]
@@ -377,19 +378,21 @@ class DataLoader:
         Loads temporary full basin comparison data from S3.
 
         Returns:
-            DataFrame: Monthly volume in m³.
+            DataFrame: Monthly volume in acre-feet.
         """
         df = self.pd_read_s3_csv(
             key="webapp_resources/flow_17593507_mean_estimated_1982_2023.csv",
         )
 
-        df["monthly_vol_m3"] = df["value"] * 73271  # UNIT
+        df["monthly_vol_af"] = (
+            df["value"] * 60.369
+        )  # UNIT: rate in CFS to vol in acre-feet
         df["date"] = pd.to_datetime(
             df["year"].astype(str) + "-" + df["month"].astype(str) + "-01"
         )
         df.reset_index(inplace=True)
         df.index = df["date"]
-        df = df[["monthly_vol_m3"]]
+        df = df[["monthly_vol_af"]]
         return df
 
     @staticmethod
@@ -469,6 +472,14 @@ class DataLoader:
         self.ds_ngen["NET_GW_CHANGE_METER"] = (
             self.ds_ngen["SOIL_TO_GW_FLUX"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"]
         )
+
+        self.ds_ngen["NET_GW_CHANGE_FEET"] = (
+            self.ds_ngen["NET_GW_CHANGE_METER"] * 3.28084
+        )  # UNIT: meters to feet
+
+        self.ds_ngen["RAIN_RATE_INCHES"] = (
+            self.ds_ngen["RAIN_RATE"] * 39.3701
+        )  # UNIT: meters to inches
 
     # def get_historic(self):
     #     """

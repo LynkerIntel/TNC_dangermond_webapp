@@ -375,7 +375,7 @@ def plot_default(data):
     fig.add_trace(
         go.Scatter(
             x=data.tnc_domain_q.index,
-            y=data.tnc_domain_q["monthly_vol_m3"],
+            y=data.tnc_domain_q["monthly_vol_af"],
             mode="lines",
             name="Natural Flows",
         )
@@ -383,9 +383,9 @@ def plot_default(data):
 
     fig.update_layout(
         autosize=True,
-        title={"text": f"Basin Streamflow (Monthly Volume)"},
+        title={"text": f"Basin Streamflow Volume"},
         title_x=0.5,
-        yaxis_title="Monthly Volume (cubic meters)",
+        yaxis_title="Monthly Volume (acre-feet)",
         uirevision="Don't change",
         plot_bgcolor="white",
         xaxis_title="",
