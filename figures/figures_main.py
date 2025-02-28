@@ -291,25 +291,25 @@ def precip_bar_fig(data):
 
 def plot_q_out(data, cat_id):
     """Plot streamflow for a selected catchment."""
-    df_nf_cat = data.df_nf[data.df_nf["divide_id"] == cat_id][["weighted_tnc_flow"]]
-    df_ng = pd.DataFrame(data.ds_ngen["Q_OUT"].sel({"catchment": cat_id}).to_pandas())
+    feature_id = int(cat_id.split("-")[1])  # get int value only
+    cfe_flow_series = data.cfe_routed_flow_af[feature_id]
 
-    fig = px.line(df_nf_cat, title="Streamflow Comparison")
+    fig = px.line(cfe_flow_series, title="Streamflow Comparison")
 
-    fig.add_trace(
-        go.Scatter(
-            x=df_ng.index,
-            y=df_ng.iloc[:, 0],
-            mode="lines",
-            name="CFE Streamflow",
-        )
-    )
+    # fig.add_trace(
+    #     go.Scatter(
+    #         x=df_ng.index,
+    #         y=df_ng.iloc[:, 0],
+    #         mode="lines",
+    #         name="CFE Streamflow",
+    #     )
+    # )
 
     fig.update_layout(
         autosize=True,
         title={"text": f"Catchment - {cat_id}: Streamflow"},
         title_x=0.5,
-        yaxis_title="m³/s",
+        yaxis_title="Monthly Volume (acre-feet)",
         uirevision="Don't change",
         plot_bgcolor="white",
         xaxis_title="",

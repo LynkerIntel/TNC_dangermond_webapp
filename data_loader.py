@@ -34,6 +34,8 @@ class DataLoader:
             NGen validation data formatted for dashboard use.
         gw_delta : dict
             Monthly groundwater delta data.
+        cfe_routed_flow_af : pd.DataFrame
+            Routed monthly flows from CFE (groundwater cal.)
     """
 
     def __init__(
@@ -84,6 +86,7 @@ class DataLoader:
         self.tnc_domain_q = self.read_tnc_domain_q()
         self.cfe_q = self.cfe_basin_q()
         self.well_data = self.get_s3_well_level()
+        self.cfe_routed_flow_af = self.load_cfe_routed_flow()
 
         self.ds_ngen = self.ngen_dashboard_data(
             key="webapp_resources/ngen_validation_20241103_monthly.nc"
@@ -372,6 +375,15 @@ class DataLoader:
         )
         resampled_df.index = pd.to_datetime(resampled_df.date)
         return resampled_df[["weighted_tnc_flow", "divide_id"]]
+
+    def load_cfe_routed_flow(self):
+        """ """
+        df = self.pd_read_s3_parquet(
+            "webapp_resources/cfe_routed_flow_monthly_af.parquet"
+        )
+        df = df.loc["1982-10-01":]
+        df.columns.name = None
+        return df
 
     def read_tnc_domain_q(self) -> pd.DataFrame:
         """
