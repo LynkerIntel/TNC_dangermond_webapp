@@ -31,8 +31,8 @@ def mapbox_lines(
     if display_var == "Q_OUT":
         # if flows, use routed data, not xr.dataset
         colors = cfe_routed_flow_af.loc[year_month]
-        colors = colors.melt(var_name="feature_id", value_name="routed_flow")
-        display_var = "routed_flow"  # set to actual col name in gdf
+        colors = colors.melt(var_name="feature_id", value_name="Streamflow Vol. (af)")
+        display_var = "Streamflow Vol. (af)"  # set to actual col name in gdf
         gdf_color = pd.merge(gdf, colors, on="feature_id", how="outer")
 
     else:
@@ -53,6 +53,14 @@ def mapbox_lines(
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
     )
+
+    # Move colorbar title below the colorbar
+    # fig.update_layout(
+    #     coloraxis_colorbar=dict(
+    #         title=dict(text=display_var, side="bottom"),
+    #         # y=0.05,
+    #     )
+    # )
 
     # add dandgermond outline
     # outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
@@ -140,6 +148,11 @@ def mapbox_lines(
         # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
+    )
+    fig.update_layout(
+        modebar=dict(
+            orientation="v"
+        ),  # Move modebar to vertical orientation (left side)
     )
     fig.layout.uirevision = True
     # print(fig)
