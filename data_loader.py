@@ -580,6 +580,10 @@ class DataLoader:
             self.ds_ngen["areasqkm"] * 1000000
         )  # UNIT: sq_km to sq_m
 
-        self.ngen_basinwide_et_loss_m3 = (
+        self.ngen_basinwide_et_loss_m3 = pd.DataFrame(
             self.ds_ngen["ACTUAL_ET_VOL_M3"].sum(dim="catchment").to_pandas()
+        )
+
+        self.ngen_basinwide_et_loss_m3["water_year"] = (
+            self.ngen_basinwide_et_loss_m3.index.map(self.water_year)
         )

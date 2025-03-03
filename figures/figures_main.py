@@ -468,8 +468,7 @@ def annual_mean(data):
     mean_input_all_years *= 0.000810714  # UNIT: m^3 to acre-feet
 
     # mean outflow for all years
-    df_et = pd.DataFrame(data.ngen_basinwide_et_loss_m3)
-    df_et["water_year"] = df_et.index.map(data.water_year)
+    df_et = data.ngen_basinwide_et_loss_m3
     et_wy = df_et.groupby("water_year").sum()
 
     # get basinwide Q from routed flows attribute
