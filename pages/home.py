@@ -419,8 +419,8 @@ layout = html.Div(
                         ],
                         style={
                             "overflow-y": "scroll",  # Enables vertical scrolling
-                            "height": "93vh",
-                            "box-shadow": "-4px -4px 10px rgba(0, 0, 0, 0.1)",
+                            # "height": "100vh",
+                            "box-shadow": "-4px -4px 10px 4px rgba(0, 0, 0, 0.1)",
                         },
                     ),
                     style={
