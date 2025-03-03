@@ -501,6 +501,7 @@ def mapbox_lines(display_var, time_click):
         gdf_wells=data.gdf_wells,
         gdf_lines=data.gdf_lines,
         time=time_click,
+        cfe_routed_flow_af=data.cfe_routed_flow_af,
     )
 
 

@@ -11,7 +11,15 @@ import data_loader
 
 
 def mapbox_lines(
-    gdf, gdf_outline, gdf_cat, display_var, ds, gdf_wells, gdf_lines, time
+    gdf,
+    gdf_outline,
+    gdf_cat,
+    display_var,
+    ds,
+    gdf_wells,
+    gdf_lines,
+    time,
+    cfe_routed_flow_af,
 ):
     """
     Primary map with flowpaths within Dangermond Preserve.
@@ -19,10 +27,19 @@ def mapbox_lines(
     # get nexgen output to color polygons by
     year_month = time[:7]
     print(year_month)
-    colors = ds[display_var].sel(Time=year_month).to_dataframe()
-    colors = colors[[display_var]]
 
-    gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
+    if display_var == "Q_OUT":
+        # if flows, use routed data, not xr.dataset
+        colors = cfe_routed_flow_af.loc[year_month]
+        colors = colors.melt(var_name="feature_id", value_name="routed_flow")
+        display_var = "routed_flow"  # set to actual col name in gdf
+        gdf_color = pd.merge(gdf, colors, on="feature_id", how="outer")
+
+    else:
+        # if any other output vars, just select from xr.dataset
+        colors = ds[display_var].sel(Time=year_month).to_dataframe()
+        colors = colors[[display_var]]
+        gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
 
     fig = px.choropleth_mapbox(
         gdf_color,
@@ -282,8 +299,8 @@ def precip_bar_fig(data):
         template="plotly_white",
         height=800,
         margin=dict(l=50, r=50, t=30, b=40),  # Reduced top/bottom margin
-        paper_bgcolor="#f4f4f4",
-        plot_bgcolor="#f4f4f4",
+        paper_bgcolor="#f8f8f8",
+        plot_bgcolor="#f8f8f8",
     )
 
     return fig
