@@ -446,12 +446,7 @@ def annual_mean(data):
     q_out = data.cfe_q.groupby("water_year").sum()
 
     mean_et = et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714  # Convert to acre-feet
-    mean_q_out = q_out["flow"].mean() * 0.000810714  # Convert to acre-feet
-
-    # # combine et and outflow
-    # total_outflow = et["ACTUAL_ET_VOL_M3"] + q_out["flow"]  # total outflow sum by WY
-    # mean_basin_outflow_all_years = total_outflow.mean()  # mean for all years
-    # mean_basin_outflow_all_years *= 0.000810714  # UNIT: m^3 to acre-feet
+    mean_q_out = q_out["flow"].mean()
 
     # make figure
     fig = make_subplots(

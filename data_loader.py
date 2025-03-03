@@ -218,7 +218,7 @@ class DataLoader:
         Load CFE Q from NGen simulation (and gauge observations).
 
         Returns:
-            DataFrame: Simulated monthly volume.
+            DataFrame: Simulated monthly volume in acre-feet
         """
         df = self.pd_read_s3_parquet(
             key="webapp_resources/cfe_20241103_troute_cat23.parquet"
@@ -377,7 +377,9 @@ class DataLoader:
         return resampled_df[["weighted_tnc_flow", "divide_id"]]
 
     def load_cfe_routed_flow(self):
-        """ """
+        """
+        Routed flows, monthly volume, in acre-feet
+        """
         df = self.pd_read_s3_parquet(
             "webapp_resources/cfe_routed_flow_monthly_af.parquet"
         )
