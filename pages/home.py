@@ -873,7 +873,7 @@ def update_summary_text(selected_year):
 
     # Format text output
     summary_text = (
-        f"{selected_year} was {precip_quartile} rain year, with a total of "
+        f"Water Year {selected_year} was {precip_quartile} rain year, with a total of "
         f"{total_precip:.1f} inches of precipitation in the preserve. "
         f"This was {precip_magnitude:.1f} times {precip_sign} than normal."
     )
