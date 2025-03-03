@@ -542,8 +542,8 @@ def annual_mean(data):
     # Update layout to stack bars properly
     fig.update_layout(
         barmode="stack",  # Enable stacking
-        yaxis=dict(title="Inflow (acre-feet)"),
-        yaxis2=dict(title="Outflow (acre-feet)"),
+        # yaxis=dict(title="Inflow (acre-feet)"),
+        yaxis2=dict(title="(acre-feet)"),
         plot_bgcolor="white",
     )
     return fig
