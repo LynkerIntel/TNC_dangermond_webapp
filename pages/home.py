@@ -865,6 +865,13 @@ def update_summary_text(selected_year):
         total_precip = "NaN"
         precip_sign = None
 
+    et_sign = "NA"
+    et_vol_af = (
+        data.ngen_basinwide_et_loss_m3[
+            data.ngen_basinwide_et_loss_m3["water_year"] == selected_year
+        ]["ACTUAL_ET_VOL_M3"].sum()
+    ) * 0.000810714  # UNIT: m^3 to acre-feet
+
     # if total_precip is None:
     #     return f"In {water_year}, precipitation data is unavailable."
 
@@ -875,7 +882,10 @@ def update_summary_text(selected_year):
     summary_text = (
         f"Water Year {selected_year} was {precip_quartile} rain year, with a total of "
         f"{total_precip:.1f} inches of precipitation in the preserve. "
-        f"This was {precip_magnitude:.1f} times {precip_sign} than normal."
+        f"This was {precip_magnitude:.1f} times {precip_sign} than normal. "
+        #
+        f"Evapotranspiration in WY{selected_year} was {et_sign} than normal,"
+        f" at {et_vol_af:,.0f} acre-feet."
     )
 
     return summary_text
