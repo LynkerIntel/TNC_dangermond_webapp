@@ -13,7 +13,6 @@ import data_loader
 def mapbox_lines(
     gdf,
     gdf_outline,
-    gdf_cat,
     display_var,
     ds,
     gdf_wells,
@@ -22,7 +21,32 @@ def mapbox_lines(
     cfe_routed_flow_af,
 ):
     """
-    Primary map with flowpaths within Dangermond Preserve.
+    Generates a primary map visualization using Mapbox, displaying flow paths, catchments,
+    and other spatial data within the Dangermond Preserve.
+
+    Parameters:
+    ----------
+    gdf : geopandas.GeoDataFrame
+        Geospatial dataset representing catchment polygons.
+    gdf_outline : geopandas.GeoDataFrame
+        Geospatial dataset outlining the preserve boundary.
+    display_var : str
+        The variable name to be used for color mapping in the choropleth layer.
+    ds : xarray.Dataset
+        Dataset containing time-series data to be used for coloring catchment polygons.
+    gdf_wells : geopandas.GeoDataFrame
+        Dataset containing well locations and associated data.
+    gdf_lines : geopandas.GeoDataFrame
+        Geospatial dataset representing streamflow paths.
+    time : str
+        The timestamp (formatted as "YYYY-MM") to filter time-dependent data.
+    cfe_routed_flow_af : pandas.DataFrame
+        DataFrame containing routed streamflow volume data in acre-feet.
+
+    Returns:
+    -------
+    fig : plotly.graph_objects.Figure
+        A Mapbox-based visualization of catchments, flowlines, and well locations.
     """
     # get nexgen output to color polygons by
     year_month = time[:7]
@@ -41,35 +65,19 @@ def mapbox_lines(
         colors = colors[[display_var]]
         gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
 
-    fig = px.choropleth_mapbox(
+    print(gdf_color.info())
+    fig = px.choropleth_map(
         gdf_color,
         geojson=gdf_color.geometry,
         locations=gdf.index,
-        opacity=1,
+        # opacity=1,
         color=display_var,
         hover_data=["divide_id"],
         center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
-        mapbox_style="open-street-map",
+        # mapbox_style="open-street-map",
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
     )
-
-    # Move colorbar title below the colorbar
-    # fig.update_layout(
-    #     coloraxis_colorbar=dict(
-    #         title=dict(text=display_var, side="bottom"),
-    #         # y=0.05,
-    #     )
-    # )
-
-    # add dandgermond outline
-    # outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
-    # outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
-    # fig.add_trace(
-    #     go.Scattermapbox(
-    #         lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
-    #     ),
-    # )
 
     # add catchment outline (single outline currently)
     catchment_lats = list(gdf["geometry"][0].exterior.xy[1])
@@ -81,7 +89,7 @@ def mapbox_lines(
     # any additional layers must be added AFTER this layer
     # this is a placeholder for the active polygon highlight
     fig.add_trace(
-        go.Scattermapbox(
+        go.Scattermap(
             lat=catchment_lats,
             lon=catchment_lons,
             mode="lines",
@@ -90,23 +98,9 @@ def mapbox_lines(
         )
     )
 
-    # fig.add_trace(
-    #     go.Scattermapbox(
-    #         lat=gdf_wells["lat"],
-    #         lon=gdf_wells["lon"],
-    #         mode="markers+text",  # You can also use 'markers' or 'text' alone
-    #         marker=go.scattermapbox.Marker(
-    #             size=6, color="white"  # You can change the marker color
-    #         ),
-    #         hovertext=gdf_wells["name"],  # Text labels for each point
-    #         customdata=gdf_wells["station_id_dendra"].to_numpy(),
-    #         # hoverinfo="text",
-    #     )
-    # )
-
     # add flowlines to map
     fig.add_trace(
-        go.Scattermapbox(
+        go.Scattermap(
             lat=lats,
             lon=lons,
             mode="lines",
@@ -121,11 +115,11 @@ def mapbox_lines(
 
     # Groundwell Location Markers
     fig.add_trace(
-        go.Scattermapbox(
+        go.Scattermap(
             lat=gdf_wells["lat"],
             lon=gdf_wells["lon"],
             mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermapbox.Marker(
+            marker=go.scattermap.Marker(
                 size=6, color="white"  # You can change the marker color
             ),
             hovertext=gdf_wells["name"],  # Text labels for each point
@@ -133,9 +127,17 @@ def mapbox_lines(
             # hoverinfo="text",
         )
     )
+    # add dandgermond outline
+    outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
+    outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
+    fig.add_trace(
+        go.Scattermap(
+            lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
+        ),
+    )
 
     fig.update_traces(
-        marker_line_width=0, marker_opacity=0, selector=dict(type="choropleth")
+        marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth")
     )
 
     fig.update_layout(
@@ -469,12 +471,12 @@ def annual_mean(data):
 
     # mean outflow for all years
     df_et = data.ngen_basinwide_et_loss_m3
-    et_wy = df_et[["ACTUAL_ET_VOL_M3", "water_year"]].groupby("water_year").sum()
+    et_wy = df_et.groupby("water_year").sum()
 
     # get basinwide Q from routed flows attribute
     q_out = data.cfe_q.groupby("water_year").sum()
 
-    mean_et = et_wy.mean() * 0.000810714  # Convert to acre-feet
+    mean_et = et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714  # Convert to acre-feet
     mean_q_out = q_out["flow"].mean()
 
     # make figure

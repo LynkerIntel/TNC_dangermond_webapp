@@ -495,7 +495,6 @@ def mapbox_lines(display_var, time_click):
     return figures_main.mapbox_lines(
         gdf=data.gdf,
         gdf_outline=data.gdf_outline,
-        gdf_cat=data.gdf,
         display_var=display_var,
         ds=data.ds_ngen,
         gdf_wells=data.gdf_wells,
@@ -725,7 +724,7 @@ def higlight_line_segment_on_map(click_data):
             catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
             catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
 
-            fig_data = go.Scattermapbox(
+            fig_data = go.Scattermap(
                 lat=catchment_lats,
                 lon=catchment_lons,
                 mode="lines",
