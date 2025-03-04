@@ -469,12 +469,12 @@ def annual_mean(data):
 
     # mean outflow for all years
     df_et = data.ngen_basinwide_et_loss_m3
-    et_wy = df_et.groupby("water_year").sum()
+    et_wy = df_et[["ACTUAL_ET_VOL_M3", "water_year"]].groupby("water_year").sum()
 
     # get basinwide Q from routed flows attribute
     q_out = data.cfe_q.groupby("water_year").sum()
 
-    mean_et = et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714  # Convert to acre-feet
+    mean_et = et_wy.mean() * 0.000810714  # Convert to acre-feet
     mean_q_out = q_out["flow"].mean()
 
     # make figure

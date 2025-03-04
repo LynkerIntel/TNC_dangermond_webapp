@@ -865,7 +865,11 @@ def update_summary_text(selected_year):
         total_precip = "NaN"
         precip_sign = None
 
-    et_sign = "NA"
+    # evapotranspiration
+    et_sign = data.et_wy_quartile.iloc[
+        data.et_wy_quartile.index == selected_year
+    ].values[0]
+
     et_vol_af = (
         data.ngen_basinwide_et_loss_m3[
             data.ngen_basinwide_et_loss_m3["water_year"] == selected_year
@@ -884,7 +888,7 @@ def update_summary_text(selected_year):
         f"{total_precip:.1f} inches of precipitation in the preserve. "
         f"This was {precip_magnitude:.1f} times {precip_sign} than normal. "
         #
-        f"Evapotranspiration in WY{selected_year} was {et_sign} than normal,"
+        f"Evapotranspiration in WY {selected_year} was {et_sign}"
         f" at {et_vol_af:,.0f} acre-feet."
     )
 

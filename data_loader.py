@@ -97,8 +97,9 @@ class DataLoader:
 
         # data processing and aggregation
         self.precip_stats()
-        self.ngen_stats()
+        # self.ngen_stats()
         self.ngen_vol_stats()
+        self.ngen_stats()
 
     def pd_read_s3_parquet(self, key, **args):
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
@@ -458,7 +459,7 @@ class DataLoader:
         self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1982":]
 
         # Compute quartiles for precipitation accumulation
-        quartile = pd.qcut(
+        ppt_quartile = pd.qcut(
             self.terraclim_ann_precip,
             q=5,
             labels=[
@@ -472,7 +473,7 @@ class DataLoader:
 
         # Attach quartiles as a DataFrame with precipitation values for reference
         self.terraclim_ann_precip = pd.DataFrame(
-            {"wy_precip_inch": self.terraclim_ann_precip, "Quartile": quartile}
+            {"wy_precip_inch": self.terraclim_ann_precip, "Quartile": ppt_quartile}
         )
 
         self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
@@ -494,6 +495,24 @@ class DataLoader:
         self.ds_ngen["RAIN_RATE_INCHES"] = (
             self.ds_ngen["RAIN_RATE"] * 39.3701
         )  # UNIT: meters to inches
+
+        # ----- ET WY Categories -----------------------
+        # monthly to WY
+        et_wy_vol_m3 = (self.ngen_basinwide_et_loss_m3.groupby("water_year").sum())[
+            "ACTUAL_ET_VOL_M3"
+        ]
+
+        self.et_wy_quartile = pd.qcut(
+            et_wy_vol_m3,
+            q=5,
+            labels=[
+                "far below average",
+                "below average",
+                "near average",
+                "above average",
+                "far above average",
+            ],
+        )
 
     # def get_historic(self):
     #     """
