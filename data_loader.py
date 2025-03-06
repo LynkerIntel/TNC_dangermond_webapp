@@ -323,6 +323,7 @@ class DataLoader:
 
         ds = xr.open_dataset(file_stream, engine="scipy")
         ds = ds.sel(Time=slice("1982-10-01", None))
+        ds["wy"] = ds["Time"].to_pandas().index.map(self.water_year)
         return ds
 
     def monthly_gw_delta(self, prefix: str) -> dict[str, pd.DataFrame]:
@@ -504,6 +505,11 @@ class DataLoader:
         self.ds_ngen["NET_GW_CHANGE_FEET"] = (
             self.ds_ngen["NET_GW_CHANGE_METER"] * 3.28084
         )  # UNIT: meters to feet
+
+        # self.cfe_gw_change_monthly_feet = self.ds_ngen["NET_GW_CHANGE_FEET"].to_pandas()
+        # self.cfe_gw_change_monthly_feet["water_year"] = (
+        #     self.cfe_gw_change_monthly_feet.index.map(self.water_year)
+        # )
 
         self.ds_ngen["RAIN_RATE_INCHES"] = (
             self.ds_ngen["RAIN_RATE"] * 39.3701
