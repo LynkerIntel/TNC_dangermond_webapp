@@ -875,19 +875,24 @@ def update_summary_text(selected_year):
         ]["ACTUAL_ET_VOL_M3"].sum()
     ) * 0.000810714  # UNIT: m^3 to acre-feet
 
-    # if total_precip is None:
-    #     return f"In {water_year}, precipitation data is unavailable."
-
-    # Convert from millimeters to inches (if needed)
-    # total_precip_inches = total_precip * 0.0393701  # mm to inches
+    # tributary flows
+    baseflow_months = data.jalama_tributaries_monthly_cfs.loc[
+        data.jalama_tributaries_monthly_cfs.index.month.isin(range(6, 9))
+    ]
+    baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == 2011]
+    baseflow_min_cfs = (
+        baseflow_wy.iloc[:, :3].min().min()
+    )  # subset out "water_year" before min()
+    baseflow_max_cfs = baseflow_wy.iloc[:, :3].max().max()  # " "
 
     # Format text output
     summary_text = (
         f"Water Year {selected_year} was {precip_quartile} rain year, with a total of "
         f"{total_precip:.1f} inches of precipitation in the preserve. "
         f"This was {precip_magnitude:.1f} times {precip_sign} than normal. "
-        #
-        f"Evapotranspiration in WY {selected_year} was {et_sign}"
+        f"Average baseflow in the main tributaries to Jalama Creek was between {baseflow_min_cfs:.0f} "
+        f"and {baseflow_max_cfs:.0f} cfs during the dry season (June-August). "
+        f"Evapotranspiration in WY {selected_year} was {et_sign}. "
         f" at {et_vol_af:,.0f} acre-feet."
     )
 

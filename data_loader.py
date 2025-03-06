@@ -36,6 +36,8 @@ class DataLoader:
             Monthly groundwater delta data.
         cfe_routed_flow_af : pd.DataFrame
             Routed monthly flows from CFE (groundwater cal.)
+        cfe_routed_flow_af : pd.DataFrame
+            Routed monthly flows from CFE (groundwater cal.)
     """
 
     def __init__(
@@ -86,7 +88,8 @@ class DataLoader:
         self.tnc_domain_q = self.read_tnc_domain_q()
         self.cfe_q = self.cfe_basin_q()
         self.well_data = self.get_s3_well_level()
-        self.cfe_routed_flow_af = self.load_cfe_routed_flow()
+        self.cfe_routed_flow_af = self.load_cfe_routed_flow_vol()
+        self.cfe_routed_flow_cfs = self.load_cfe_routed_flow_rate()
 
         self.ds_ngen = self.ngen_dashboard_data(
             key="webapp_resources/ngen_validation_20241103_monthly.nc"
@@ -102,14 +105,17 @@ class DataLoader:
         self.ngen_stats()
 
     def pd_read_s3_parquet(self, key, **args):
+        """S3"""
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
         return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
 
     def pd_read_s3_csv(self, key, **args):
+        """S3"""
         obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
         return pd.read_csv(io.BytesIO(obj["Body"].read()), **args)
 
     def gpd_read_s3_gpk(self, key, driver="GPKG", **args):
+        """S3"""
         response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
         data = response["Body"].read()
         with io.BytesIO(data) as src:
@@ -228,12 +234,6 @@ class DataLoader:
         df = df.loc["1982-10-01":]
         df["water_year"] = df.index.map(self.water_year)
         return df[["flow", "water_year"]]
-
-    def calculate_basin_q_stats(self):
-        """
-        Calculate Jalema Creek
-        """
-        # self.jalema_creek_mean =
 
     def ngen_csv_to_df(
         self,
@@ -377,7 +377,7 @@ class DataLoader:
         resampled_df.index = pd.to_datetime(resampled_df.date)
         return resampled_df[["weighted_tnc_flow", "divide_id"]]
 
-    def load_cfe_routed_flow(self):
+    def load_cfe_routed_flow_vol(self):
         """
         Routed flows, monthly volume, in acre-feet
         """
@@ -386,6 +386,19 @@ class DataLoader:
         )
         df = df.loc["1982-10-01":]
         df.columns.name = None
+
+        return df
+
+    def load_cfe_routed_flow_rate(self):
+        """
+        Routed flows, as a rate in CFS.
+        """
+        df = self.pd_read_s3_parquet(
+            "webapp_resources/cfe_routed_flow_monthly_cfs.parquet"
+        )
+        df = df.loc["1982-10-01":]
+        df.columns.name = None
+
         return df
 
     def read_tnc_domain_q(self) -> pd.DataFrame:
@@ -512,6 +525,15 @@ class DataLoader:
                 "above average",
                 "far above average",
             ],
+        )
+
+        # ----- Jalama Cr Tributary Stats -----------
+        # get flows for Jalama Ck tributaries -----------
+        self.jalama_tributaries_monthly_cfs = self.cfe_routed_flow_cfs[
+            [42, 58, 36]
+        ].copy()
+        self.jalama_tributaries_monthly_cfs["water_year"] = (
+            self.jalama_tributaries_monthly_cfs.index.map(self.water_year)
         )
 
     # def get_historic(self):

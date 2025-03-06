@@ -39,7 +39,7 @@ def mapbox_lines(
     gdf_lines : geopandas.GeoDataFrame
         Geospatial dataset representing streamflow paths.
     time : str
-        The timestamp (formatted as "YYYY-MM") to filter time-dependent data.
+        The timestamp (formatted as "YYYY-MM-DD") to filter time-dependent data.
     cfe_routed_flow_af : pandas.DataFrame
         DataFrame containing routed streamflow volume data in acre-feet.
 
