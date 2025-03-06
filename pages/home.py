@@ -888,11 +888,27 @@ def update_summary_text(selected_year):
     baseflow_months = data.jalama_tributaries_monthly_cfs.loc[
         data.jalama_tributaries_monthly_cfs.index.month.isin(range(6, 9))
     ]
-    baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == 2011]
+    baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == selected_year]
     baseflow_min_cfs = (
         baseflow_wy.iloc[:, :3].min().min()
     )  # subset out "water_year" before min()
     baseflow_max_cfs = baseflow_wy.iloc[:, :3].max().max()  # " "
+
+    # groundwater change
+    gw_elevation_delta_wy = (
+        data.ds_ngen["NET_GW_CHANGE_FEET"]
+        .where(data.ds_ngen["wy"] == selected_year, drop=True)
+        .mean(dim="catchment")  # basinwide mean
+        .cumsum()  # running sum
+        .to_pandas()
+    )
+    eoy_diff = gw_elevation_delta_wy.iloc[-1] - gw_elevation_delta_wy.iloc[0]
+    max_level = gw_elevation_delta_wy.max()
+
+    if eoy_diff > 0:
+        eoy_diff_sign = "above"
+    else:
+        eoy_diff_sign = "below"
 
     # Format text output
     summary_text = (
@@ -901,8 +917,11 @@ def update_summary_text(selected_year):
         f"This was {precip_magnitude:.1f} times {precip_sign} than normal. "
         f"Average baseflow in the main tributaries to Jalama Creek was between {baseflow_min_cfs:.0f} "
         f"and {baseflow_max_cfs:.0f} cfs during the dry season (June-August). "
-        f"Evapotranspiration in WY {selected_year} was {et_sign}. "
-        f" at {et_vol_af:,.0f} acre-feet."
+        f"Evapotranspiration in WY {selected_year} was {et_sign} "
+        f" with a volume of {et_vol_af:,.0f} acre-feet. "
+        f"Starting from Oct 1 {selected_year - 1}, the mean groundwater elevation in the basin increased "
+        f"{max_level:.1f} feet during the rainy season, "
+        f"and ended the water year {abs(eoy_diff):.1f} feet {eoy_diff_sign} the starting level."
     )
 
     return summary_text
