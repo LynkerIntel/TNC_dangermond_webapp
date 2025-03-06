@@ -81,16 +81,16 @@ layout = html.Div(
                             parent_className="loading_wrapper",
                             children=[
                                 # html.Div(html.H4("Dangermond Preserve")),
-                                html.Br(),
-                                html.Div(html.P("Model Output Explorer")),
-                                html.Hr(
-                                    style={
-                                        "borderWidth": "1px",
-                                        "width": "100%",
-                                        # "borderColor": "#AB87FF",
-                                        "opacity": "unset",
-                                    }
-                                ),
+                                # html.Br(),
+                                # html.Div(html.P("Model Output Explorer")),
+                                # html.Hr(
+                                #     style={
+                                #         "borderWidth": "1px",
+                                #         "width": "100%",
+                                #         # "borderColor": "#AB87FF",
+                                #         "opacity": "unset",
+                                #     }
+                                # ),
                                 dcc.Store(id="cat-click-store"),
                                 # shows selected reach
                                 html.Div(id="contents", hidden=True),
@@ -100,12 +100,13 @@ layout = html.Div(
                                         {
                                             "label": "CFE - Groundwater Calibration",
                                             "value": 1,
+                                            # "disabled": "True",
                                         },
-                                        {
-                                            "label": "CFE - Streamflow Calibration",
-                                            "value": 2,
-                                            "disabled": "True",
-                                        },
+                                        # {
+                                        #     "label": "CFE - Streamflow Calibration",
+                                        #     "value": 2,
+                                        #     "disabled": "True",
+                                        # },
                                     ],
                                     value=[1],
                                     id="switches-input",
@@ -262,10 +263,10 @@ layout = html.Div(
                                             striped=True,  # Stripe the rows
                                             responsive=True,  # Make table responsive
                                             size="sm",  # Small size for a more compact look
-                                            style={
-                                                "border-radius": "5px",  # Rounded corners
-                                                "overflow": "hidden",  # Ensure borders and rounding apply smoothly
-                                            },
+                                            # style={
+                                            #     "border-radius": "5px",  # Rounded corners
+                                            #     "overflow": "hidden",  # Ensure borders and rounding apply smoothly
+                                            # },
                                         )
                                     ],
                                 ),
@@ -294,8 +295,9 @@ layout = html.Div(
                                         dcc.Download(id="download-dataframe-csv"),
                                     ],
                                     className="d-grid gap-2",
-                                    style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                    # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
                                 ),
+                                html.Br(),
                                 dcc.Store(id="selected-date-store"),
                                 # html.Br(),
                                 # html.Div(id="click-modal"),
@@ -316,16 +318,23 @@ layout = html.Div(
                                 #     # className="flex-fill",
                                 # ),
                             ],
+                            style={
+                                "height": "100vh",
+                                "overflow-y": "auto",  # Ensures entire sidebar is scrollable
+                                "padding": "10px",  # Prevents unexpected spacing issues
+                            },
                         ),
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
                     lg=3,
                     className="ml-3 mt-0",
-                    style={
-                        # "background-color": "#f0f0f0",
-                        # "padding": "20 20 20 20",
-                        # "margin": "10 10 10 10",
-                    },
+                    # style={
+                    #     "height": "100vh",
+                    #     "overflow-y": "auto",
+                    #     # "background-color": "#f0f0f0",
+                    #     # "padding": "20 20 20 20",
+                    #     # "margin": "10 10 10 10",
+                    # },
                 ),
                 dbc.Col(
                     html.Div(
@@ -419,8 +428,8 @@ layout = html.Div(
                         ],
                         style={
                             "overflow-y": "scroll",  # Enables vertical scrolling
-                            "height": "100vh",
-                            "box-shadow": "-4px -4px 10px 4px rgba(0, 0, 0, 0.1)",
+                            "height": "110vh",
+                            "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
                         },
                     ),
                     style={

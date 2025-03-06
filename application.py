@@ -89,18 +89,43 @@ def create_app():
         ],
     )
 
-    application.layout = dbc.Container(
-        fluid=True,
-        id="root",  # most outer container
-        children=[
-            header_layout,
-            dash.page_container,
-        ],
-        style={
-            "padding": "0",
-            # "width": "100% !important",
-            "overflow-x": "hidden",
-        },
+    # application.layout = dbc.Container(
+    #     fluid=True,
+    #     id="root",  # most outer container
+    #     children=[
+    #         header_layout,
+    #         dash.page_container,
+    #     ],
+    #     style={
+    #         "padding": "0",
+    #         # "width": "100% !important",
+    #         "overflow-x": "hidden",
+    #     },
+    # )
+
+    # Define the app layout
+    application.layout = html.Div(
+        [
+            # Fixed Navbar
+            html.Div(
+                header_layout,
+                style={
+                    "position": "fixed",
+                    "top": 0,
+                    "width": "100%",
+                    "z-index": "1000",
+                    "background-color": "white",
+                },
+            ),
+            html.Div(
+                dash.page_container,
+                style={
+                    "padding-top": "60px",
+                    "max-width": "100%",
+                    "overflow-x": "hidden",
+                },
+            ),
+        ]
     )
 
     # return the Dash app
