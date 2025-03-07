@@ -210,16 +210,15 @@ layout = html.Div(
                                             options=[
                                                 {"label": col, "value": col}
                                                 for col in [
-                                                    "SOIL_STORAGE",
-                                                    "POTENTIAL_ET",
-                                                    "ACTUAL_ET",
-                                                    "Q_OUT",
-                                                    "NET_VOL_ACRE_FT",
-                                                    "NET_GW_CHANGE_METER",
-                                                    "RAIN_RATE",
+                                                    # "SOIL_STORAGE",
+                                                    "Potential ET",
+                                                    "Actual ET",
+                                                    "Streamflow",
+                                                    "Groundwater Storage",
+                                                    "Precipitation",
                                                 ]
                                             ],
-                                            value="Q_OUT",  # Default value
+                                            value="Streamflow",  # Default value
                                         ),
                                     ],
                                     # className="custom-control custom-switch",
@@ -428,7 +427,7 @@ layout = html.Div(
                         ],
                         style={
                             "overflow-y": "scroll",  # Enables vertical scrolling
-                            "height": "110vh",
+                            "height": "116vh",
                             "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
                         },
                     ),
@@ -921,7 +920,7 @@ def update_summary_text(selected_year):
         f" with a volume of {et_vol_af:,.0f} acre-feet. "
         f"Starting from Oct 1 {selected_year - 1}, the mean groundwater elevation in the basin increased "
         f"{max_level:.1f} feet during the rainy season, "
-        f"and ended the water year {abs(eoy_diff):.1f} feet {eoy_diff_sign} the starting level."
+        f"and ended the water year {abs(eoy_diff):.1f} feet {eoy_diff_sign} the starting elevation."
     )
 
     return summary_text

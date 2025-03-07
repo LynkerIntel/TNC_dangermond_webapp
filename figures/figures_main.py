@@ -52,31 +52,59 @@ def mapbox_lines(
     year_month = time[:7]
     print(year_month)
 
-    if display_var == "Q_OUT":
+    # Translate between button names, xr.Dataset names, and Legend names
+    # item 0 = dataset name, item 1 = legend name
+    access_dict = {
+        "Streamflow": [
+            "Streamflow Vol. (af)",
+            "Streamflow <br>(acre-feet)",
+        ],
+        "Groundwater Storage": [
+            "NET_VOL_ACRE_FT",
+            "Groundwater Storage Change <br>(acre-feet)",
+        ],
+        "Actual ET": [
+            "ACTUAL_ET_INCH",
+            "Actual <br>Evapotranspiration <br>(inches)",
+        ],
+        "Potential ET": [
+            "POTENTIAL_ET_INCH",
+            "Potential <br>Evapotranspiration <br>(inches)",
+        ],
+        "Precipitation": [
+            "RAIN_RATE_INCH",
+            "Precipitation <br>(inches)",
+        ],
+    }
+
+    ds_var = access_dict[display_var][0]
+
+    if ds_var == "Streamflow Vol. (af)":
         # if flows, use routed data, not xr.dataset
         colors = cfe_routed_flow_af.loc[year_month]
         colors = colors.melt(var_name="feature_id", value_name="Streamflow Vol. (af)")
-        display_var = "Streamflow Vol. (af)"  # set to actual col name in gdf
+        # display_var = "Streamflow Vol. (af)"  # set to actual col name in gdf
+        # display_var = access_dict[display_var][0]
         gdf_color = pd.merge(gdf, colors, on="feature_id", how="outer")
 
     else:
         # if any other output vars, just select from xr.dataset
-        colors = ds[display_var].sel(Time=year_month).to_dataframe()
-        colors = colors[[display_var]]
+        colors = ds[ds_var].sel(Time=year_month).to_dataframe()
+        colors = colors[[ds_var]]
         gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
 
-    print(gdf_color.info())
     fig = px.choropleth_map(
         gdf_color,
         geojson=gdf_color.geometry,
         locations=gdf.index,
         # opacity=1,
-        color=display_var,
+        color=access_dict[display_var][0],
         hover_data=["divide_id"],
         center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
         # mapbox_style="open-street-map",
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
+        labels={ds_var: access_dict[display_var][1]},
     )
 
     # add catchment outline (single outline currently)
@@ -247,7 +275,7 @@ def precip_bar_fig(data):
         cols=1,
         shared_xaxes=True,
         subplot_titles=[
-            "Basin Total Precipitation (TerraClimate)",
+            "Basin Annual Precipitation",
             "Cumulative Change in Ground Water Storage",
         ],
         vertical_spacing=0.15,

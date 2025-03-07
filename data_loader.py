@@ -506,6 +506,18 @@ class DataLoader:
             self.ds_ngen["NET_GW_CHANGE_METER"] * 3.28084
         )  # UNIT: meters to feet
 
+        self.ds_ngen["RAIN_RATE_INCH"] = (
+            self.ds_ngen["RAIN_RATE"] * 39.3701
+        )  # UNIT: meter to inch
+
+        self.ds_ngen["POTENTIAL_ET_INCH"] = (
+            self.ds_ngen["POTENTIAL_ET"] * 39.3701
+        )  # UNIT: meter to inch
+
+        self.ds_ngen["ACTUAL_ET_INCH"] = (
+            self.ds_ngen["ACTUAL_ET"] * 39.3701
+        )  # UNIT: meter to inch
+
         # self.cfe_gw_change_monthly_feet = self.ds_ngen["NET_GW_CHANGE_FEET"].to_pandas()
         # self.cfe_gw_change_monthly_feet["water_year"] = (
         #     self.cfe_gw_change_monthly_feet.index.map(self.water_year)
