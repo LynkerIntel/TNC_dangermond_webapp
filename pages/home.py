@@ -1,5 +1,6 @@
 import dash
 from dash import html
+import datetime
 import io
 import requests
 import dash
@@ -21,14 +22,19 @@ from dash import (
     dash_table,
     ctx,
 )
+
+from dash.exceptions import PreventUpdate
+
 import dash_bootstrap_components as dbc
 from flask import Flask
 import numpy as np
 import os
 import boto3
 import io
+import xarray as xr
 
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from figures import figures_main
 import data_loader
@@ -41,34 +47,29 @@ dash.register_page(__name__, path="/")
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
-gdf = data_loader.get_local_hydrofabric()
-gdf_outline = data_loader.get_outline()
-gdf_cat = data_loader.get_local_hydrofabric(layer="divides")
-dfs = data_loader.get_s3_cabcm()
-df_route = data_loader.get_local_routing()
+# note, boto3 will ignore this if local aws credentials exist
+s3 = boto3.resource(
+    "s3",
+    aws_access_key_id=os.getenv("aws_access_key_id"),
+    aws_secret_access_key=os.getenv("aws_secret_access_key"),
+)
 
 
-map_fig = figures_main.mapbox_lines(gdf, gdf_outline, gdf_cat)
+data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
+
+
+# list of catchments in the ngen output data
+cats = data.ds_ngen["catchment"].to_pandas().to_list()
+fig = go.Figure()
+
+
+# map_fig = figures_main.mapbox_lines(data.gdf, data.gdf_outline, data.gdf)
 # wb_ts_fig = figures_main.water_balance_fig(dfs)
+precip_bar_fig = figures_main.precip_bar_fig(data)
+summary_data_fig = figures_main.annual_mean(data)
 
+# gw_bar_fig = figures_main.gw_bar_fig(data)
 
-# def layout():
-#     """
-#     This defines the map layout.
-#     """
-#     # data is loaded here to initialize the map,
-#     # afterwards, all updates are made from a
-#     # callback in application.py
-
-#     # df_obs = pd.read_csv("data/mros_met_geog_2023_09_21_noAKCA.csv")
-#     # df_obs.index = pd.to_datetime(df_obs["datetime_utc"])
-
-#     # remove leading whitespace from df
-#     # df_obs = df_obs.replace(r"^ +| +$", r"", regex=True)
-
-#     fig = figures_main.generate_map(MAPBOX_API_KEY, df_obs)
-
-#     return
 
 layout = html.Div(
     [
@@ -79,19 +80,45 @@ layout = html.Div(
                         dcc.Loading(
                             parent_className="loading_wrapper",
                             children=[
-                                html.Div(html.H4("Dangermond Preserve")),
-                                html.Div(html.P("Model Output Explorer")),
-                                html.Hr(
-                                    style={
-                                        "borderWidth": "1px",
-                                        "width": "100%",
-                                        # "borderColor": "#AB87FF",
-                                        "opacity": "unset",
-                                    }
-                                ),
-                                html.Br(),
+                                # html.Div(html.H4("Dangermond Preserve")),
+                                # html.Br(),
+                                # html.Div(html.P("Model Output Explorer")),
+                                # html.Hr(
+                                #     style={
+                                #         "borderWidth": "1px",
+                                #         "width": "100%",
+                                #         # "borderColor": "#AB87FF",
+                                #         "opacity": "unset",
+                                #     }
+                                # ),
+                                dcc.Store(id="cat-click-store"),
                                 # shows selected reach
-                                html.Div(id="contents"),
+                                html.Div(id="contents", hidden=True),
+                                dbc.Label("Model Formulation:"),
+                                dbc.Checklist(
+                                    options=[
+                                        {
+                                            "label": "CFE - Groundwater Calibration",
+                                            "value": 1,
+                                            # "disabled": "True",
+                                        },
+                                        # {
+                                        #     "label": "CFE - Streamflow Calibration",
+                                        #     "value": 2,
+                                        #     "disabled": "True",
+                                        # },
+                                    ],
+                                    value=[1],
+                                    id="switches-input",
+                                    switch=True,
+                                    style={
+                                        "padding": "0rem 1.5rem 0rem 1.5rem",
+                                        # "color": "pink",
+                                    },
+                                    # input_style={"color": "pink"},
+                                    # input_class_name="custom-checkbox custom-control-input",
+                                    # label_checked_class_name="custom-control-label",
+                                ),
                                 #
                                 # html.Div("Buttons"),
                                 # html.Div(
@@ -128,111 +155,134 @@ layout = html.Div(
                                 #     ],
                                 #     className="d-md-flex mt-1",
                                 # ),
-                                html.Div("Select custom time range:"),
-                                dcc.DatePickerRange(
-                                    display_format="YYYY/MM/DD",
-                                    id="date-picker-range",
-                                    number_of_months_shown=1,
-                                    month_format="MMM YYYY",
-                                    end_date_placeholder_text="MMM Do, YY",
-                                    style={"zIndex": 1001},
-                                    className="dash-bootstrap",
+                                dbc.Label("Select year and month:"),
+                                # dcc.DatePickerSingle(
+                                #     display_format="YYYY/MM/DD",
+                                #     id="date-picker-range",
+                                #     number_of_months_shown=1,
+                                #     month_format="MMM YYYY",
+                                #     # end_date_placeholder_text="MMM Do, YY",
+                                #     style={"zIndex": 1001},
+                                #     className="dash-bootstrap",
+                                # ),
+                                dcc.Dropdown(
+                                    id="year-dropdown",
+                                    options=[
+                                        {"label": str(year), "value": year}
+                                        for year in range(1983, 2024)
+                                    ],
+                                    value=2008,  # default value is the current year
+                                    placeholder="Select a year",
+                                    className="mb-1",
+                                    clearable=False,
                                 ),
-                                dbc.FormText("(YYYY/MM/DD)"),
-                                html.Br(),
+                                # Dropdown for selecting month
+                                dcc.Dropdown(
+                                    id="month-dropdown",
+                                    options=[
+                                        {"label": "January", "value": 1},
+                                        {"label": "February", "value": 2},
+                                        {"label": "March", "value": 3},
+                                        {"label": "April", "value": 4},
+                                        {"label": "May", "value": 5},
+                                        {"label": "June", "value": 6},
+                                        {"label": "July", "value": 7},
+                                        {"label": "August", "value": 8},
+                                        {"label": "September", "value": 9},
+                                        {"label": "October", "value": 10},
+                                        {"label": "November", "value": 11},
+                                        {"label": "December", "value": 12},
+                                    ],
+                                    value=1,  # default value is the current month
+                                    placeholder="Select a month",
+                                    clearable=False,
+                                ),
+                                # html.Div(id="output-date"),
+                                # dbc.FormText("(YYYY/MM/DD)"),
+                                # html.Br(),
                                 # html.Br(),
                                 html.Div(
                                     [
-                                        dbc.Label("Model Formulation:"),
-                                        dbc.Checklist(
+                                        # html.Br(),
+                                        dbc.Label("Select output variable:"),
+                                        dcc.Dropdown(
+                                            id="variable-dropdown",
                                             options=[
-                                                {
-                                                    "label": "NextGen",
-                                                    "value": "Rain",
-                                                },
-                                                {
-                                                    "label": "LSTM",
-                                                    "value": "Snow",
-                                                },
+                                                {"label": col, "value": col}
+                                                for col in [
+                                                    # "SOIL_STORAGE",
+                                                    "Potential ET",
+                                                    "Actual ET",
+                                                    "Streamflow",
+                                                    "Groundwater Storage",
+                                                    "Precipitation",
+                                                ]
                                             ],
-                                            value=["Rain", "Snow"],
-                                            id="switches-input",
-                                            switch=True,
-                                            style={
-                                                "padding": "0rem 0rem 0rem 1.5rem",
-                                                # "color": "pink",
-                                            },
-                                            # input_style={"color": "pink"},
-                                            # input_class_name="custom-checkbox custom-control-input",
-                                            # label_checked_class_name="custom-control-label",
+                                            value="Streamflow",  # Default value
                                         ),
                                     ],
                                     # className="custom-control custom-switch",
                                     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
                                 ),
-                                # html.Br(),
-                                # dbc.Label("Select Bounds:"),
-                                # html.Div(
-                                #     [
-                                #         # html.P("Minimum Elevation"),
-                                #         dbc.Input(
-                                #             id="input-elev-min",
-                                #             # debounce=True,
-                                #             type="number",
-                                #             # min=0,
-                                #             # max=5000,
-                                #             step=1,
-                                #             placeholder="Minimum",
-                                #         ),
-                                #     ],
-                                #     # id="min-elev",
-                                #     className="mb-2",
-                                # ),
-                                # html.Div(
-                                #     [
-                                #         # html.P("Maximum Elevation"),
-                                #         dbc.Input(
-                                #             # debounce=True,
-                                #             id="input-elev-max",
-                                #             type="number",
-                                #             min=0,
-                                #             max=5000,
-                                #             step=1,
-                                #             placeholder="Maximum",
-                                #         ),
-                                #         dbc.FormText("unit: meters"),
-                                #     ],
-                                #     # id="max-elev",
-                                # ),
-                                # html.Br(),
-                                # html.Hr(
-                                #     style={
-                                #         "borderWidth": "1px",
-                                #         "width": "100%",
-                                #         # "borderColor": "#AB87FF",
-                                #         "opacity": "unset",
-                                #     }
-                                # ),
-                                # dbc.Row(
-                                #     [
-                                #         html.H6(
-                                #             [
-                                #                 "Selections:",
-                                #                 dbc.Badge(
-                                #                     "None",
-                                #                     id="selected-points",
-                                #                     className="ms-1",
-                                #                 ),
-                                #                 dbc.Tooltip(
-                                #                     "Use the selection tools (Lasso or Box) in the upper right corner to select observations. \
-                                #                 To remove selection: double click outside of the selection area",
-                                #                     target="selected-points",
-                                #                 ),
-                                #             ]
-                                #         ),
-                                #     ]
-                                # ),
                                 html.Br(),
+                                html.Div("Full Domain Statistics:"),
+                                html.Div(
+                                    id="comparison-table-container",
+                                    children=[
+                                        dbc.Table(
+                                            html.Tbody(
+                                                [
+                                                    html.Tr(
+                                                        [html.Td("Month"), html.Td("")]
+                                                    ),  # Blank cell for month
+                                                    html.Tr(
+                                                        [
+                                                            html.Td(
+                                                                "Selected Volume (m³)"
+                                                            ),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for selected volume
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("Avg Volume (m³)"),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for average volume
+                                                    html.Tr(
+                                                        [
+                                                            html.Td("% of Avg"),
+                                                            html.Td(""),
+                                                        ]
+                                                    ),  # Blank cell for % of avg
+                                                ]
+                                            ),
+                                            bordered=True,  # Add table borders
+                                            hover=True,  # Enable hover effect
+                                            striped=True,  # Stripe the rows
+                                            responsive=True,  # Make table responsive
+                                            size="sm",  # Small size for a more compact look
+                                            # style={
+                                            #     "border-radius": "5px",  # Rounded corners
+                                            #     "overflow": "hidden",  # Ensure borders and rounding apply smoothly
+                                            # },
+                                        )
+                                    ],
+                                ),
+                                # html.Br(),
+                                html.Div(
+                                    [
+                                        dbc.Label("Data Summary:"),
+                                        dcc.Markdown(
+                                            id="summary-text",
+                                            children="Loading data...",
+                                            style={
+                                                "padding": "0.5rem",
+                                                # "font-size": "14px",
+                                            },
+                                        ),
+                                    ]
+                                ),
                                 html.Div(
                                     [
                                         dbc.Button(
@@ -244,8 +294,10 @@ layout = html.Div(
                                         dcc.Download(id="download-dataframe-csv"),
                                     ],
                                     className="d-grid gap-2",
-                                    style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                    # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
                                 ),
+                                html.Br(),
+                                dcc.Store(id="selected-date-store"),
                                 # html.Br(),
                                 # html.Div(id="click-modal"),
                                 # dcc.Graph(
@@ -265,37 +317,126 @@ layout = html.Div(
                                 #     # className="flex-fill",
                                 # ),
                             ],
+                            style={
+                                "height": "100vh",
+                                "overflow-y": "auto",  # Ensures entire sidebar is scrollable
+                                "padding": "10px",  # Prevents unexpected spacing issues
+                            },
                         ),
                     ),
                     # html.Div(id="coords", style={"display": "none"}),
                     lg=3,
-                    # className="col-9",
-                    style={
-                        "background-color": "white",
-                        "padding": "0 10 0 0",
-                    },
+                    className="ml-3 mt-0",
+                    # style={
+                    #     "height": "100vh",
+                    #     "overflow-y": "auto",
+                    #     # "background-color": "#f0f0f0",
+                    #     # "padding": "20 20 20 20",
+                    #     # "margin": "10 10 10 10",
+                    # },
                 ),
                 dbc.Col(
                     html.Div(
                         [
-                            dcc.Graph(
-                                figure=map_fig,
-                                id="map",
-                                style={"height": "40vh"},
-                                # style={"height": "100vh", "width": "100vw"},
-                                config={"displaylogo": False},
-                                # className="flex-fill",
+                            dcc.Loading(
+                                id="loading-spinner-map",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        id="choropleth-map",
+                                        style={"height": "40vh"},
+                                        config={
+                                            "displaylogo": False,
+                                            "scrollZoom": True,
+                                        },
+                                    ),
+                                ],
                             ),
-                            dcc.Graph(
-                                # figure=wb_ts_fig,
-                                id="wb_ts_fig",
-                                style={"height": "50vh"},
-                                # style={"height": "100vh", "width": "100vw"},
-                                config={"displaylogo": False},
-                                # className="flex-fill",
+                            dcc.Loading(
+                                id="loading-spinner-wb_ts",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        id="wb_ts_fig",
+                                        style={"height": "40vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
                             ),
-                        ]
-                    )
+                            dcc.Loading(
+                                id="loading-spinner-precip-bar",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        # id="bar_fig"
+                                        figure=precip_bar_fig,
+                                        style={"height": "70vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
+                            ),
+                            dcc.Loading(
+                                id="loading-spinner-summary-fig",
+                                delay_show=100,
+                                type="default",
+                                children=[
+                                    dcc.Graph(
+                                        # id="bar_fig"
+                                        figure=summary_data_fig,
+                                        style={"height": "50vh"},
+                                        config={"displaylogo": False},
+                                    ),
+                                ],
+                            ),
+                            # DBC Modal
+                            dbc.Modal(
+                                [
+                                    dbc.ModalHeader(
+                                        dbc.ModalTitle(id="well-name-title")
+                                    ),
+                                    dbc.ModalBody(html.P(id="modal-content")),
+                                    dbc.ModalBody(
+                                        dcc.Loading(
+                                            id="loading-spinner-model",
+                                            delay_show=100,
+                                            type="default",
+                                            children=[
+                                                dcc.Graph(
+                                                    id="modal-figure",
+                                                    figure=fig,
+                                                )  # Include the figure inside the modal
+                                            ],
+                                        )
+                                    ),
+                                    dbc.ModalFooter(
+                                        dbc.Button(
+                                            "Close",
+                                            id="close-modal",
+                                            className="ml-auto",
+                                            n_clicks=0,
+                                        )
+                                    ),
+                                ],
+                                id="modal",
+                                size="xl",
+                                is_open=False,  # Initially closed
+                            ),
+                        ],
+                        style={
+                            "overflow-y": "scroll",  # Enables vertical scrolling
+                            "height": "116vh",
+                            "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
+                        },
+                    ),
+                    style={
+                        # "backgroundColor": "#cccccc",
+                        # "border-radius": "5px",
+                        # "overflow-x": "hidden",
+                    },  # dbc.Col style
+                    class_name="mr-3",
                 ),
             ],
         )
@@ -304,16 +445,18 @@ layout = html.Div(
 
 
 # # Callbacks ----------------
-@callback(Output("contents", "children"), Input("map", "clickData"))
-def update_contents(clickData):
+@callback(Output("contents", "children"), Input("choropleth-map", "clickData"))
+def update_contents(click_data):
     """
     get click data from primary map, add to layout.
     """
-    if clickData:
-        print("clicked")
-        print(clickData)
-        id = clickData["points"][0]["customdata"][0]
-        # dff = df[df["centroid_lat"] == fips]
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 0:
+            # print("clicked")
+            # print(click_data)
+            id = click_data["points"][0]["customdata"][0]
+            # dff = df[df["centroid_lat"] == fips]
     else:
         id = 1
 
@@ -324,419 +467,460 @@ def update_contents(clickData):
             #     columns=[{"name": i, "id": i} for i in dff.columns],
             #     data=dff.to_dict(orient="records"),
             # )
-            id
+            1
         ]
     )
 
 
-# this callback visualized CABCM data
+@callback(
+    [
+        # Output("output-date", "children"),
+        Output("selected-date-store", "data"),
+    ],  # Store the selected date
+    [Input("year-dropdown", "value"), Input("month-dropdown", "value")],
+)
+def date_from_year_month(year, month):
+    """ """
+    if year and month:
+        selected_date = datetime.date(year, month, 1).strftime("%Y-%m-%d")
+        return [selected_date]
+    return None
+
+
+# Callback to update map based on selected column
+@callback(
+    Output("choropleth-map", "figure"),
+    Input("variable-dropdown", "value"),
+    Input("selected-date-store", "data"),
+)
+def mapbox_lines(display_var, time_click):
+    """
+    Primary map with flowpaths within Dangermond Preserve.
+    """
+    print(display_var)
+    print(time_click)
+
+    return figures_main.mapbox_lines(
+        gdf=data.gdf,
+        gdf_outline=data.gdf_outline,
+        display_var=display_var,
+        ds=data.ds_ngen,
+        gdf_wells=data.gdf_wells,
+        gdf_lines=data.gdf_lines,
+        time=time_click,
+        cfe_routed_flow_af=data.cfe_routed_flow_af,
+    )
+
+
+# Callback to handle click event and show/hide modal
+@callback(
+    Output("modal", "is_open"),
+    [Input("choropleth-map", "clickData"), Input("close-modal", "n_clicks")],
+    [State("modal", "is_open")],
+)
+def toggle_modal(click_data, n_clicks, is_open):
+    # check if click_data or None
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+
+        # set True if well location points have been clicked
+        if (layer == 3) and not is_open:
+            return True
+
+    # If the close button is clicked, close the modal
+    if n_clicks and is_open:
+        return False
+
+    return is_open  # Keep modal state unchanged if no click event
+
+
+# Callback to update modal content based on click_data
+@callback(
+    Output("well-name-title", "children"),
+    Input("choropleth-map", "clickData"),
+)
+def update_modal_content(click_data):
+    if click_data:
+        # print(f"{click_data=}")
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 3:
+            well_name = click_data["points"][0]["hovertext"]
+            stn_id = click_data["points"][0]["customdata"]
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
+                "divide_id"
+            ].values[0]
+            return f"Groundwater Comparison: {well_name} & catchment '{cat}'"
+    return ""
+
+
+# Callback to update modal content based on clickData (optional if dynamic)
+@callback(
+    Output("modal-figure", "figure"),
+    Input("choropleth-map", "clickData"),
+    prevent_initial_call=True,
+    # suppress_callback_exceptions=True,
+)
+def update_modal_figure(click_data):
+    """Update modal fig with comparison of CFE groundwater elevation and observerd well level.
+
+    TODO: subset well locations on plot to only those with good data
+    """
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        # print(f"{layer=}")
+        # print(click_data)
+        if layer == 3:
+            print(f"well click: {click_data}")
+            # get stn id from click
+            stn_id = click_data["points"][0]["customdata"]
+            print(f"{stn_id=}")
+            # user stn id to look up catchment
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
+                "divide_id"
+            ].values[0]
+            print(f"{cat=}")
+
+            # 1. cumulative CFE change for catchment
+            cfe_elev_series = (
+                data.ds_ngen["NET_GW_CHANGE_FEET"]
+                .sel({"catchment": cat})
+                .cumsum()
+                .to_pandas()
+            )
+            # 2. terraclim precip for catchment
+            # ppt_series = (
+            #     data.terraclim["ppt"]
+            #     .loc[data.terraclim["ppt"]["divide_id"] == cat]["value"]
+            #     .loc["1982-10-01":]
+            # )
+            # 2. precip forcing for catchment
+            ppt_aorc = (
+                data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
+            )
+
+            try:
+                # 3. get observation data for catchment
+                well_obs_series = data.well_data[stn_id]
+                first = well_obs_series.first_valid_index()
+                well_obs_series -= well_obs_series[first]
+
+                fig = make_subplots(
+                    rows=2,
+                    cols=1,
+                    shared_xaxes=True,
+                    vertical_spacing=0.02,
+                    # subplot_titles=[
+                    #     "Basin Total Precipitation (TerraClimate)",
+                    #     "Cumulative Change in Ground Water Storage",
+                    # ],
+                )
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=cfe_elev_series.index,
+                        y=cfe_elev_series,
+                        mode="lines",
+                        name="CFE Simulated Groundwater Elevation Change",
+                    ),
+                    row=1,
+                    col=1,
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=well_obs_series.index,
+                        y=well_obs_series,
+                        mode="lines",
+                        name="Observed Groundwater Level Change",
+                    ),
+                    row=1,
+                    col=1,
+                )
+                # precip
+                fig.add_trace(
+                    go.Scatter(
+                        x=ppt_aorc.index,
+                        y=ppt_aorc,
+                        mode="lines",
+                        name="Precipitation Forcing (inches)",
+                    ),
+                    row=2,
+                    col=1,
+                )
+
+                fig.update_layout(
+                    # yaxis=dict(title="Groundwater Elevation Change (meters)"),
+                    legend=dict(
+                        orientation="h",  # Horizontal orientation
+                        yanchor="bottom",  # Aligns legend to bottom
+                        y=-0.2,  # Moves legend below the plot (adjust this value as needed)
+                        xanchor="center",  # Center-aligns legend horizontally
+                        x=0.5,  # Centers the legend
+                    ),
+                    margin=dict(
+                        l=50,  # Left margin (reduce as needed)
+                        r=30,  # Right margin
+                        t=30,  # Top margin
+                        b=30,  # Bottom margin
+                    ),
+                    yaxis=dict(title="Water Level Change (feet)"),
+                    yaxis2=dict(title="Precipitation (inch)"),
+                )
+
+                return fig
+            except:
+                return go.Figure()
+
+    return go.Figure()
+
+
 @callback(
     Output("wb_ts_fig", "figure"),
-    Input("map", "clickData"),
+    Input("choropleth-map", "clickData"),
+    Input("variable-dropdown", "value"),
+    State("cat-click-store", "data"),
 )
-def water_balance_figure(id_click):
+def water_balance_figure(click_data, model_var, stored_cat_click):
     """
     Define time series figure locations on map.
     """
-    if id_click is None:
-        id = 2614389
-    else:
-        id = id_click["points"][0]["customdata"][0]
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        if layer == 0:  # click must be on polygon layer
+            cat_id = click_data["points"][0]["customdata"][0]
+            # print(click_data)
 
-    # idx = f"fp_{fp}"  # translate number to column
-    # print(f"{idx=}")
-    # # subset of full vars
-    # #model_vars = ["aet", "cwd", "pck", "pet", "rch", "run"]
-    # #df_all = pd.concat([dfs[i][idx] for i in model_vars], axis=1)
-    # df_all.columns = model_vars
-    df_sub = df_route[df_route["feature_id"] == id]
+            if model_var == "Q_OUT":
+                return figures_main.plot_q_out(data, cat_id)
 
-    fig = px.line(df_sub["flow"])
-    fig.update_layout(
-        # width=100vh,
-        # height=100vw,
-        autosize=True,
-        margin=dict(l=20, r=10, t=45, b=0),
-        title={"text": f"Catchment - {id}"},
-        title_x=0.5,
-        # uirevision="Don't change",
-        # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
-    )
+            if model_var == "ACTUAL_ET":
+                print("returning et plot")
+                return figures_main.plot_actual_et(data, cat_id)
 
-    fig.update_layout(plot_bgcolor="white")
-    # fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
-    # fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#f7f7f7")
+            # if model_var == "Recharge":
+            #     return figures_main.plot_recharge(data, cat_id)
 
-    # # print(fig["data"])
-    return fig
+    return figures_main.plot_default(data)
 
 
 @callback(
-    Output("map", "figure"),
-    Input("map", "clickData"),
+    Output("choropleth-map", "figure", allow_duplicate=True),
+    Input("choropleth-map", "clickData"),
     prevent_initial_call=True,
 )
-def higlight_line_segment_on_map(id_click):
+def higlight_line_segment_on_map(click_data):
     """
     Highlight line segment to make user selection more obvious. This method use linestrings, rather
     than polygons, to provide higlighting around the polygons.
     """
-    print("highlight callback fired")
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        # print(f"layer: {layer}")
 
-    if id_click is None:
-        id = 1
-    else:
-        id = id_click["points"][0]["customdata"][0]
+        if layer == 0:
+            id = click_data["points"][0]["customdata"][0]
+            patched_figure = Patch()
 
-    # country_count = list(df[df.country.isin(countries)].index)
-    patched_figure = Patch()
-    # updated_markers = ["#ff1397" for i in range(len(dfs["run"]) + 1)]
-    # patched_figure["data"][0]["line"]["color"] = updated_markers
-    print(id)
-    subset = gdf[gdf["feature_id"] == id]
-    print(subset)
+            # print(id)
+            subset = data.gdf[data.gdf["divide_id"] == id]
+            # print(subset)
 
-    # if geometry is a LINESTRING
-    # catchment_lats = list(subset["geometry"][0].exterior.xy[1])
-    # catchment_lons = list(subset["geometry"][0].exterior.xy[0])
+            # if geometry is a LINESTRING
+            # catchment_lats = list(subset["geometry"][0].exterior.xy[1])
+            # catchment_lons = list(subset["geometry"][0].exterior.xy[0])
 
-    # if geometry is a POLYGON
-    catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
-    catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
+            # if geometry is a POLYGON
+            catchment_lons = list(subset["geometry"].iloc[0].exterior.xy[0])
+            catchment_lats = list(subset["geometry"].iloc[0].exterior.xy[1])
 
-    data = go.Scattermapbox(
-        lat=catchment_lats,
-        lon=catchment_lons,
-        mode="lines",
-        hoverinfo="skip",
-        # hovertext=gdf_cat["divide_id"].tolist(),
+            fig_data = go.Scattermap(
+                lat=catchment_lats,
+                lon=catchment_lons,
+                mode="lines",
+                hoverinfo="skip",
+                line=dict(
+                    width=3,
+                    color="white",
+                ),
+                # hovertext=gdf_cat["divide_id"].tolist(),
+            )
+
+            patched_figure["data"][1] = fig_data
+            return patched_figure
+
+    return no_update
+
+
+@callback(
+    Output("cat-click-store", "data"),
+    Input("choropleth-map", "clickData"),
+)
+def store_catchment_click(click_data):
+    """ """
+    if click_data:
+        layer = click_data["points"][0]["curveNumber"]
+        print(f"{layer=}")
+        if layer == 0:
+            print(click_data)
+            cat_id = click_data["points"][0]["customdata"]
+            print(cat_id)
+            return cat_id
+
+
+@callback(
+    Output("comparison-table-container", "children"),
+    Input("selected-date-store", "data"),
+)
+def update_table(selected_date):
+    # Convert the selected date into a pandas datetime object
+    selected_date = pd.to_datetime(selected_date)
+
+    # Extract the selected month and year
+    selected_month = selected_date.month
+
+    # Filter the DataFrame to get data for the selected month across all years
+    # selected_month_df = df_q[df_q.index.month == selected_month]
+    selected_month_df = data.tnc_domain_q[
+        data.tnc_domain_q.index.month == selected_month
+    ]
+
+    # Get the volume for the selected month (for the specific year)
+    # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
+    selected_month_value = data.tnc_domain_q.loc[selected_date, "monthly_vol_af"]
+
+    # Calculate the average volume for that month across all years
+    # average_value = selected_month_df["Simulated Monthly Volume"].mean()
+    average_value = selected_month_df["monthly_vol_af"].mean()
+
+    # Calculate the "% of average" for the selected month
+    percent_of_average = (selected_month_value / average_value) * 100
+
+    # Format the data for display
+    formatted_selected_value = f"{selected_month_value:,.0f}"
+    formatted_average_value = f"{average_value:,.0f}"
+    formatted_percent_of_average = f"{percent_of_average:.0f}%"
+
+    # Construct the dbc.Table with a vertical layout
+    table = dbc.Table(
+        # Table header
+        [
+            # Table body with data in vertical layout
+            html.Tbody(
+                [
+                    html.Tr(
+                        [html.Td("Month"), html.Td(selected_date.strftime("%B %Y"))]
+                    ),  # Month Year
+                    html.Tr(
+                        [
+                            html.Td("Monthly Volume (af)"),
+                            html.Td(formatted_selected_value),
+                        ]
+                    ),  # Selected month value
+                    html.Tr(
+                        [html.Td("Avg Volume (af)"), html.Td(formatted_average_value)]
+                    ),  # Average value for month
+                    html.Tr(
+                        [html.Td("% of Avg"), html.Td(formatted_percent_of_average)]
+                    ),  # % of average
+                ]
+            )
+        ],
+        bordered=True,  # Add table borders
+        hover=True,  # Enable hover effect
+        striped=True,  # Stripe the rows
+        responsive=True,  # Make table responsive
+        size="sm",  # Small size for a more compact look
+        style={
+            # "border-radius": "5px",  # Rounded corners
+            "overflow": "hidden",  # Ensure borders and rounding apply smoothly
+        },
     )
 
-    # print("new patch data:")
-    # print(data)
-    # data[1] is already occupied by the outline trace, so add data[3] as the highlight segment
-    # patched_figure["data"][0] = data
-
-    patched_figure["data"][1] = data
-
-    return patched_figure
+    return table
 
 
-# @callback(Output("map", "figure"), Input("update_contents", "value"))
-# def update_waterbalance_timeseries(click_data):
-#     """ """
-#     print("updating fig")
+@callback(
+    Output("summary-text", "children"),
+    Input("year-dropdown", "value"),
+)
+def update_summary_text(selected_year):
+    """
+    Update summary paragraph with statistics from the data class.
+    """
+    if selected_year is None:
+        raise PreventUpdate
 
+    # Convert selected year into water year format
+    water_year = f"Water Year {selected_year}"
 
-# @callback(
-#     Output("map", "figure"),
-#     Input("date-picker-range", "start_date"),
-#     Input("date-picker-range", "end_date"),
-#     Input("switches-input", "value"),
-#     Input("input-elev-min", "value"),
-#     Input("input-elev-max", "value"),
-#     prevent_intial_call=True,
-# )
-# def update_visualization(start, end, phases, min_elev, max_elev):
-#     """
-#     Update the map data based on time range and phase selection. This is a
-#     partial property callback that only updates data.
+    # Get total precipitation for the selected water year (example dataset key)
+    if hasattr(data, "terraclim_ann_precip"):
+        total_precip = data.terraclim_ann_precip["wy_precip_inch"].loc[selected_year]
+        precip_quartile = data.terraclim_ann_precip["Quartile"].loc[selected_year]
+    else:
+        total_precip = None
+        precip_quartile = None
 
-#     list 0 is hidden layer to preserve map layout, data traces start at index 1.
+    if hasattr(data, "terraclim_mean_annual_precip"):
+        mean_precip = data.terraclim_mean_annual_precip
+        precip_magnitude = total_precip / mean_precip
 
-#     :param (str) start: start date in "YYYY-MM-DD"
-#     :param (str) end: end dat in "YYYY-MM-DD"
-#     :param (list) phases: list containing up to three 3 strs of: ["Rain", "Snow", "Mix]
+        if precip_magnitude > 1:
+            precip_sign = "greater"
+        elif precip_magnitude <= 1:
+            precip_sign = "less"
+    else:
+        total_precip = "NaN"
+        precip_sign = None
 
-#     :return (go.Patch): Update data for map
-#     """
-#     log.info("revising map data")
-#     print(min_elev, max_elev)
+    # evapotranspiration
+    et_sign = data.et_wy_quartile.iloc[
+        data.et_wy_quartile.index == selected_year
+    ].values[0]
 
-#     df_sub = df_obs[df_obs["datetime_utc"].between(start, end)]
-#     df_sub = df_sub[df_sub["phase"].isin(phases)]
+    et_vol_af = (
+        data.ngen_basinwide_et_loss_m3[
+            data.ngen_basinwide_et_loss_m3["water_year"] == selected_year
+        ]["ACTUAL_ET_VOL_M3"].sum()
+    ) * 0.000810714  # UNIT: m^3 to acre-feet
 
-#     if min_elev is None:
-#         min_elev = 0
+    # tributary flows
+    baseflow_months = data.jalama_tributaries_monthly_cfs.loc[
+        data.jalama_tributaries_monthly_cfs.index.month.isin(range(6, 9))
+    ]
+    baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == selected_year]
+    baseflow_min_cfs = (
+        baseflow_wy.iloc[:, :3].min().min()
+    )  # subset out "water_year" before min()
+    baseflow_max_cfs = baseflow_wy.iloc[:, :3].max().max()  # " "
 
-#     if max_elev is None:
-#         max_elev = 6000
+    # groundwater change
+    gw_elevation_delta_wy = (
+        data.ds_ngen["NET_GW_CHANGE_FEET"]
+        .where(data.ds_ngen["wy"] == selected_year, drop=True)
+        .mean(dim="catchment")  # basinwide mean
+        .cumsum()  # running sum
+        .to_pandas()
+    )
+    eoy_diff = gw_elevation_delta_wy.iloc[-1] - gw_elevation_delta_wy.iloc[0]
+    max_level = gw_elevation_delta_wy.max()
 
-#     df_sub = df_sub[df_sub["elevation.m"].between(min_elev, max_elev)]
+    if eoy_diff > 0:
+        eoy_diff_sign = "above"
+    else:
+        eoy_diff_sign = "below"
 
-#     patched_fig = Patch()
+    # Format text output
+    summary_text = (
+        f"Water Year {selected_year} was {precip_quartile} rain year, with a total of "
+        f"{total_precip:.1f} inches of precipitation in the preserve. "
+        f"This was {precip_magnitude:.1f} times {precip_sign} than normal. "
+        f"Average baseflow in the main tributaries to Jalama Creek was between {baseflow_min_cfs:.0f} "
+        f"and {baseflow_max_cfs:.0f} cfs during the dry season (June-August). "
+        f"Evapotranspiration in WY {selected_year} was {et_sign} "
+        f" with a volume of {et_vol_af:,.0f} acre-feet. "
+        f"Starting from Oct 1 {selected_year - 1}, the mean groundwater elevation in the basin increased "
+        f"{max_level:.1f} feet during the rainy season, "
+        f"and ended the water year {abs(eoy_diff):.1f} feet {eoy_diff_sign} the starting elevation."
+    )
 
-#     # update data and hover info
-#     for i, phase in enumerate(["Rain", "Snow", "Mix"]):
-#         df = df_sub[df_sub["phase"] == phase]
-#         i += 1  # map layer 0 does not contain data traces
-#         patched_fig["data"][i]["lat"] = df["map_latitude"]
-#         patched_fig["data"][i]["lon"] = df["map_longitude"]
-
-#         # must match "customdata" attribute in figures_main.generate_map()
-#         patched_fig["data"][i]["customdata"] = df[
-#             [
-#                 "elevation.m",
-#                 "all.id",
-#                 "datetime_utc",
-#                 # "local_time",
-#             ]
-#         ].values
-
-#     return patched_fig
-
-
-# @callback(
-#     Output("download-dataframe-csv", "data"),
-#     Input("download-data-button", "n_clicks"),
-#     # Input("input-elev-min", "value"),
-#     # Input("input-elev-max", "value"),
-#     [State("map", "selectedData")],
-#     State("date-picker-range", "start_date"),
-#     State("date-picker-range", "end_date"),
-#     # State("input-elev-min", "value"),
-#     # State("input-elev-max", "value"),
-#     # State("switches-input", "value"),
-#     # State("map", "figure"),
-#     prevent_initial_call=True,
-#     suppress_callback_exceptions=True,
-# )
-# def download_prepare(n_clicks, selected_data, start, end):
-#     """
-#     Subset and save DataFrame to csv. Currently uses "all.id" in processed MROS data
-#     to uniquely identify observations.
-
-#     Several columns are dropped, including "all.id" and "map_latitude/map_longitude"
-#     as these are the jittered points using for display only.
-
-
-#     :param (int) n_clicks: unused
-#     :param (dict) selectedData: Figure output from plotly.js with selection
-#         data, and other state vars
-#     :param (str) start: start date in "YYYY-MM-DD"
-#     :param (str) end: end dat in "YYYY-MM-DD"
-
-#     :return: Download file from browser.
-#     """
-#     log.info("download initiated")
-#     if selected_data is not None:
-#         points = selected_data["points"]
-#         log.info("points %s", len(points))
-
-#         if len(points) > 0:
-#             ids = [
-#                 i["customdata"]
-#                 for i in points
-#                 if ("customdata" in i) & (i["curveNumber"] != 0)
-#             ]
-#             # remove any points from trace 0, which is not visible
-#             # ids = [i for i in ids if i["curveNumber"] != 0]
-#             # using loc based index for now, should be labeled
-#             # in future to prevent missing data from causing loc
-#             # check to fail
-#             ids = [i[2] for i in ids]
-#             print(f"{ids=}")
-
-#             # df_sub = df_obs[df_obs["id"].isin(ids)]
-#             df_sub = df_obs[df_obs["all.id"].isin(ids)]
-#             df_sub = df_sub.drop(columns=["all.id", "map_latitude", "map_longitude"])
-
-#             filename = f"mros_obs_{start}_{end}.csv"
-
-#             log.info("saving file")
-#             return dcc.send_data_frame(df_sub.to_csv, filename)
-
-#     log.info("must select points to download")
-#     return no_update
-
-
-# @callback(
-#     Output(
-#         "map",
-#         "figure",
-#         allow_duplicate=True,
-#     ),
-#     Input("map", "relayoutData"),
-#     prevent_initial_call=True,
-#     suppress_callback_exceptions=True,
-# )
-# def limit_zoom_level(map_state, traces=4):
-#     """
-#     Detects map zoom level, and hides points when zoom
-#     exceedes a threshold (12.5) A maximum zoom annotation is also
-#     displayed.
-
-#     :param (dict) map_state: dict of current map state, from the figure.
-#         Updates whenever the zoom level or view coordinates change.
-#     :param (int) layers: the number of data traces in the map. This is
-#         required in order to turn off visibility and hoverlabels when
-#         zoom theshold is exceeded. If this number is set incorrectly,
-#         zoom events past the threshold will cause visible errors in
-#         the figure.
-
-#     :return (Dash.Patch): partial property update
-#     """
-#     log.debug(map_state)
-
-#     if len(map_state) > 1:
-#         zoom = map_state["mapbox.zoom"]
-#         # zoom = fig["layout"]["mapbox"]["zoom"]
-#         # print(f"{zoom=}")
-#         patched_fig = Patch()
-
-#         if zoom > 12.5:
-#             for i in range(1, traces):
-#                 patched_fig["data"][i]["marker"]["opacity"] = 0
-#                 patched_fig["layout"]["hovermode"] = False
-#                 patched_fig["layout"]["annotations"] = [
-#                     {
-#                         "font": {"color": "black", "size": 18},
-#                         "showarrow": False,
-#                         "text": "Zoom out to view observations",
-#                         "x": 0.5,
-#                         "xref": "paper",
-#                         "y": 0.5,
-#                         "yref": "paper",
-#                         "yshift": 10,
-#                     }
-#                 ]
-#         else:
-#             for i in range(1, traces):
-#                 patched_fig["data"][i]["marker"]["opacity"] = 1
-#                 patched_fig["layout"]["hovermode"] = True
-#                 del patched_fig["layout"]["annotations"]
-
-#         return patched_fig
-
-#     return no_update
-
-
-# @callback(
-#     Output("selected-points", "children"),
-#     Output("download-data-button", "disabled"),
-#     [Input("map", "selectedData")],
-#     # prevent_initial_call=True,
-# )
-# def display_selected_data(selected_data):
-#     """Show counter with number of selected observations on the nav panel.
-
-#     :param (dict) selectedData: Figure output from plotly.js with selection
-#         data, and other state vars
-#     :returns (str): number of points.
-#     """
-#     print(f"{selected_data=}")
-
-#     if selected_data is not None:
-#         points = selected_data["points"]
-#         if len(points) > 0:
-#             return [f"{len(points)}", False]
-
-#     elif selected_data is None:
-#         return ["None", True]
-
-
-# @callback(
-#     Output("click-modal", "children"),
-#     Output("map", "clickData"),
-#     [Input("map", "clickData")],
-#     prevent_initial_call=True,
-# )
-# def display_click_data(clickData):
-#     """Get information for select point
-
-#     This callback returns a Modal (pop-up) that displays a datatable showing
-#     all available information for selected observation. Currently this
-#     includes all fields, but can be subset.
-
-#     :param clickData (dict): click data from map
-#     :return (tuple): This is a tuple of the modal div element, and secondly,
-#         None. None is used to reset the "clickData" object after the
-#         data table is displayed. Without this, if a user clicks on the
-#         same point twice, the modal will not open!
-#     """
-#     if clickData is not None:
-#         ob_id = clickData["points"][0]["customdata"][1]
-#         print(f"{ob_id=}")
-
-#         # df is melted when called by dbc.Table below
-#         res = df_obs[df_obs["all.id"] == ob_id].iloc[:1]
-#         res.drop(columns=["map_longitude", "map_latitude"], axis=1, inplace=True)
-
-#         return (
-#             html.Div(
-#                 [
-#                     # dbc.Button("Open modal", id="open", n_clicks=0),
-#                     dbc.Modal(
-#                         [
-#                             dbc.ModalHeader(dbc.ModalTitle("Point Data")),
-#                             dbc.ModalBody(
-#                                 [
-#                                     # html.Div("Point Data:"),
-#                                     dbc.Table.from_dataframe(
-#                                         res.melt(),
-#                                         striped=True,
-#                                         bordered=True,
-#                                         hover=True,
-#                                     ),
-#                                 ]
-#                             ),
-#                             # dbc.ModalFooter(
-#                             #     dbc.Button(
-#                             #         "Close", id="close", className="ms-auto", n_clicks=0
-#                             #     )
-#                             # ),
-#                         ],
-#                         id="modal-body-scroll",
-#                         scrollable=True,
-#                         is_open=True,
-#                     ),
-#                 ]
-#             ),
-#             None,
-#         )
-#     else:
-#         return "Click on the map to get data"
-
-
-# @callback(
-#     [
-#         Output("date-picker-range", "start_date"),
-#         Output("date-picker-range", "end_date"),
-#     ],
-#     Input("day-button", "n_clicks"),
-#     Input("week-button", "n_clicks"),
-#     Input("month-button", "n_clicks"),
-#     Input("year-button", "n_clicks"),
-#     # prevent_initial_call=True,
-# )
-# def update_date_picker(day, week, month, year):
-#     """
-#     Callback to update the date range picker with present values
-#     of 1 week, 1 month, and 1 year.
-
-#     :param (str) week: id of week button
-#     :param (str) month: id of month button
-#     :param (str) year: id of year button
-#     :return (list): list with values for start_date and end_date
-#         either datetime object of str of YYYY-MM-DD is accepted.
-#     """
-#     if ctx.triggered_id is None:  # initial condition
-#         # set default date interval on app start
-#         start_date = dt.today() - timedelta(days=8)
-
-#     if "day-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=1)
-
-#     if "week-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=7)
-
-#     if "month-button" == ctx.triggered_id:
-#         # print(f"week is {week}")
-#         start_date = dt.today() - timedelta(days=31)
-
-#     if "year-button" == ctx.triggered_id:
-#         start_date = dt.today() - timedelta(days=366)
-
-#     return [start_date, dt.today()]
+    return summary_text

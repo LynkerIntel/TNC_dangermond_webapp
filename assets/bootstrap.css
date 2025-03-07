@@ -11282,3 +11282,9 @@ a.text-dark:focus {
 .loading_wrapper > div {
   visibility: visible !important;
 }
+
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}

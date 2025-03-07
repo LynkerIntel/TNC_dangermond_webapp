@@ -3,12 +3,12 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - numpy=1.23.5
+  - numpy
+  - waitress
   - conda-forge::xarray
   - freezegun
   - conda-forge::python-dotenv
   - pandas
-  - suds-jurko
   - conda-forge::shapely
   - appdirs
   - numpydoc
@@ -27,7 +27,7 @@ dependencies:
   - conda-forge::gdal
   - pyarrow
   - conda-forge::dask
-  - python=3.9
+  - python=3.11
   - geopandas
   - pytest-cov
   - mock

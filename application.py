@@ -1,6 +1,6 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-from layouts.main_layout import main_layout
+from layouts.header_layout import header_layout
 
 from dash import Dash, html, dcc, Patch, no_update
 import plotly.express as px
@@ -89,13 +89,43 @@ def create_app():
         ],
     )
 
-    application.layout = dbc.Container(
-        fluid=True,
-        id="root",  # most outer container
-        children=[
-            main_layout,
-            dash.page_container,
-        ],
+    # application.layout = dbc.Container(
+    #     fluid=True,
+    #     id="root",  # most outer container
+    #     children=[
+    #         header_layout,
+    #         dash.page_container,
+    #     ],
+    #     style={
+    #         "padding": "0",
+    #         # "width": "100% !important",
+    #         "overflow-x": "hidden",
+    #     },
+    # )
+
+    # Define the app layout
+    application.layout = html.Div(
+        [
+            # Fixed Navbar
+            html.Div(
+                header_layout,
+                style={
+                    "position": "fixed",
+                    "top": 0,
+                    "width": "100%",
+                    "z-index": "1000",
+                    "background-color": "white",
+                },
+            ),
+            html.Div(
+                dash.page_container,
+                style={
+                    "padding-top": "60px",
+                    "max-width": "100%",
+                    "overflow-x": "hidden",
+                },
+            ),
+        ]
     )
 
     # return the Dash app
