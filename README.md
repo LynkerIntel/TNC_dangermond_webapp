@@ -40,6 +40,17 @@ The app includes an Anaconda-based `environment.yml` as well as `requirements.tx
    python application.py
    ```
 
+## Run app from container
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/LynkerIntel/TNC_dangermond_webapp.git
+   ```
+
+2. **With Docker installed, start the container:**
+   ```bash
+   docker compose up --build
+   ```
+
 ## Deployment
 The app is deployed for testing and development with a free `render` server instance, via Dockerhub image.
 
