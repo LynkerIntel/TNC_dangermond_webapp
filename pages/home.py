@@ -24,7 +24,6 @@ from dash import (
 )
 
 from dash.exceptions import PreventUpdate
-
 import dash_bootstrap_components as dbc
 from flask import Flask
 import numpy as np
@@ -32,19 +31,16 @@ import os
 import boto3
 import io
 import xarray as xr
+import logging
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from figures import figures_main
 import data_loader
-import logging
 
 log = logging.getLogger(__name__)
 dash.register_page(__name__, path="/")
-
-
-MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY")
 
 
 # note, boto3 will ignore this if local aws credentials exist
@@ -54,21 +50,14 @@ s3 = boto3.resource(
     aws_secret_access_key=os.getenv("aws_secret_access_key"),
 )
 
-
 data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
-
-
 # list of catchments in the ngen output data
 cats = data.ds_ngen["catchment"].to_pandas().to_list()
+
+# figs that load with the layout
 fig = go.Figure()
-
-
-# map_fig = figures_main.mapbox_lines(data.gdf, data.gdf_outline, data.gdf)
-# wb_ts_fig = figures_main.water_balance_fig(dfs)
 precip_bar_fig = figures_main.precip_bar_fig(data)
 summary_data_fig = figures_main.annual_mean(data)
-
-# gw_bar_fig = figures_main.gw_bar_fig(data)
 
 
 layout = html.Div(
@@ -80,17 +69,6 @@ layout = html.Div(
                         dcc.Loading(
                             parent_className="loading_wrapper",
                             children=[
-                                # html.Div(html.H4("Dangermond Preserve")),
-                                # html.Br(),
-                                # html.Div(html.P("Model Output Explorer")),
-                                # html.Hr(
-                                #     style={
-                                #         "borderWidth": "1px",
-                                #         "width": "100%",
-                                #         # "borderColor": "#AB87FF",
-                                #         "opacity": "unset",
-                                #     }
-                                # ),
                                 dcc.Store(id="cat-click-store"),
                                 # shows selected reach
                                 html.Div(id="contents", hidden=True),
@@ -115,56 +93,8 @@ layout = html.Div(
                                         "padding": "0rem 1.5rem 0rem 1.5rem",
                                         # "color": "pink",
                                     },
-                                    # input_style={"color": "pink"},
-                                    # input_class_name="custom-checkbox custom-control-input",
-                                    # label_checked_class_name="custom-control-label",
                                 ),
-                                #
-                                # html.Div("Buttons"),
-                                # html.Div(
-                                #     [
-                                #         dbc.Button(
-                                #             "1 Day",
-                                #             outline=True,
-                                #             color="secondary",
-                                #             className="me-1 mb-1",
-                                #             id="day-button",
-                                #         ),
-                                #         dbc.Button(
-                                #             "1 Week",
-                                #             outline=True,
-                                #             color="secondary",
-                                #             className="me-1 mb-1",
-                                #             id="week-button",
-                                #         ),
-                                #         dbc.Button(
-                                #             "1 Month",
-                                #             outline=True,
-                                #             color="secondary",
-                                #             className="me-1 mb-1",
-                                #             id="month-button",
-                                #         ),
-                                #         dbc.Button(
-                                #             "1 Year",
-                                #             outline=True,
-                                #             # active = True,
-                                #             color="secondary",
-                                #             className="me-1 mb-1",
-                                #             id="year-button",
-                                #         ),
-                                #     ],
-                                #     className="d-md-flex mt-1",
-                                # ),
                                 dbc.Label("Select year and month:"),
-                                # dcc.DatePickerSingle(
-                                #     display_format="YYYY/MM/DD",
-                                #     id="date-picker-range",
-                                #     number_of_months_shown=1,
-                                #     month_format="MMM YYYY",
-                                #     # end_date_placeholder_text="MMM Do, YY",
-                                #     style={"zIndex": 1001},
-                                #     className="dash-bootstrap",
-                                # ),
                                 dcc.Dropdown(
                                     id="year-dropdown",
                                     options=[
@@ -197,10 +127,6 @@ layout = html.Div(
                                     placeholder="Select a month",
                                     clearable=False,
                                 ),
-                                # html.Div(id="output-date"),
-                                # dbc.FormText("(YYYY/MM/DD)"),
-                                # html.Br(),
-                                # html.Br(),
                                 html.Div(
                                     [
                                         # html.Br(),
@@ -237,9 +163,7 @@ layout = html.Div(
                                                     ),  # Blank cell for month
                                                     html.Tr(
                                                         [
-                                                            html.Td(
-                                                                "Selected Volume (m³)"
-                                                            ),
+                                                            html.Td("Selected Volume (m³)"),
                                                             html.Td(""),
                                                         ]
                                                     ),  # Blank cell for selected volume
@@ -298,24 +222,6 @@ layout = html.Div(
                                 ),
                                 html.Br(),
                                 dcc.Store(id="selected-date-store"),
-                                # html.Br(),
-                                # html.Div(id="click-modal"),
-                                # dcc.Graph(
-                                #     figure=map_fig,
-                                #     id="map",
-                                #     style={"height": "40vh"},
-                                #     # style={"height": "100vh", "width": "100vw"},
-                                #     config={"displaylogo": False},
-                                #     # className="flex-fill",
-                                # ),
-                                # dcc.Graph(
-                                #     # figure=wb_ts_fig,
-                                #     id="wb_ts_fig",
-                                #     # style={"width": "83.1vw", "height": "94vh"},
-                                #     # style={"height": "100vh", "width": "100vw"},
-                                #     config={"displaylogo": False},
-                                #     # className="flex-fill",
-                                # ),
                             ],
                             style={
                                 "height": "100vh",
@@ -327,13 +233,6 @@ layout = html.Div(
                     # html.Div(id="coords", style={"display": "none"}),
                     lg=3,
                     className="ml-3 mt-0",
-                    # style={
-                    #     "height": "100vh",
-                    #     "overflow-y": "auto",
-                    #     # "background-color": "#f0f0f0",
-                    #     # "padding": "20 20 20 20",
-                    #     # "margin": "10 10 10 10",
-                    # },
                 ),
                 dbc.Col(
                     html.Div(
@@ -394,9 +293,7 @@ layout = html.Div(
                             # DBC Modal
                             dbc.Modal(
                                 [
-                                    dbc.ModalHeader(
-                                        dbc.ModalTitle(id="well-name-title")
-                                    ),
+                                    dbc.ModalHeader(dbc.ModalTitle(id="well-name-title")),
                                     dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalBody(
                                         dcc.Loading(
@@ -546,9 +443,9 @@ def update_modal_content(click_data):
         if layer == 3:
             well_name = click_data["points"][0]["hovertext"]
             stn_id = click_data["points"][0]["customdata"]
-            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
-                "divide_id"
-            ].values[0]
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id]["divide_id"].values[
+                0
+            ]
             return f"Groundwater Comparison: {well_name} & catchment '{cat}'"
     return ""
 
@@ -575,17 +472,14 @@ def update_modal_figure(click_data):
             stn_id = click_data["points"][0]["customdata"]
             print(f"{stn_id=}")
             # user stn id to look up catchment
-            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id][
-                "divide_id"
-            ].values[0]
+            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id]["divide_id"].values[
+                0
+            ]
             print(f"{cat=}")
 
             # 1. cumulative CFE change for catchment
             cfe_elev_series = (
-                data.ds_ngen["NET_GW_CHANGE_FEET"]
-                .sel({"catchment": cat})
-                .cumsum()
-                .to_pandas()
+                data.ds_ngen["NET_GW_CHANGE_FEET"].sel({"catchment": cat}).cumsum().to_pandas()
             )
             # 2. terraclim precip for catchment
             # ppt_series = (
@@ -594,9 +488,7 @@ def update_modal_figure(click_data):
             #     .loc["1982-10-01":]
             # )
             # 2. precip forcing for catchment
-            ppt_aorc = (
-                data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
-            )
+            ppt_aorc = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
 
             try:
                 # 3. get observation data for catchment
@@ -779,9 +671,7 @@ def update_table(selected_date):
 
     # Filter the DataFrame to get data for the selected month across all years
     # selected_month_df = df_q[df_q.index.month == selected_month]
-    selected_month_df = data.tnc_domain_q[
-        data.tnc_domain_q.index.month == selected_month
-    ]
+    selected_month_df = data.tnc_domain_q[data.tnc_domain_q.index.month == selected_month]
 
     # Get the volume for the selected month (for the specific year)
     # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
@@ -873,9 +763,7 @@ def update_summary_text(selected_year):
         precip_sign = None
 
     # evapotranspiration
-    et_sign = data.et_wy_quartile.iloc[
-        data.et_wy_quartile.index == selected_year
-    ].values[0]
+    et_sign = data.et_wy_quartile.iloc[data.et_wy_quartile.index == selected_year].values[0]
 
     et_vol_af = (
         data.ngen_basinwide_et_loss_m3[
@@ -888,9 +776,7 @@ def update_summary_text(selected_year):
         data.jalama_tributaries_monthly_cfs.index.month.isin(range(6, 9))
     ]
     baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == selected_year]
-    baseflow_min_cfs = (
-        baseflow_wy.iloc[:, :3].min().min()
-    )  # subset out "water_year" before min()
+    baseflow_min_cfs = baseflow_wy.iloc[:, :3].min().min()  # subset out "water_year" before min()
     baseflow_max_cfs = baseflow_wy.iloc[:, :3].max().max()  # " "
 
     # groundwater change
