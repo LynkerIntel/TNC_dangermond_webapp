@@ -147,9 +147,7 @@ def mapbox_lines(
             lat=gdf_wells["lat"],
             lon=gdf_wells["lon"],
             mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermap.Marker(
-                size=6, color="white"  # You can change the marker color
-            ),
+            marker=go.scattermap.Marker(size=6, color="white"),  # You can change the marker color
             hovertext=gdf_wells["name"],  # Text labels for each point
             customdata=gdf_wells["station_id_dendra"],
             # hoverinfo="text",
@@ -159,14 +157,10 @@ def mapbox_lines(
     outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
     outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
     fig.add_trace(
-        go.Scattermap(
-            lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
-        ),
+        go.Scattermap(lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"),
     )
 
-    fig.update_traces(
-        marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth")
-    )
+    fig.update_traces(marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth"))
 
     fig.update_layout(
         # width=100vh,
@@ -174,16 +168,14 @@ def mapbox_lines(
         showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
-        map_bounds={"west": -180, "east": -100, "south": 30, "north": 60},
         # paper_bgcolor="#f4f4f4",
         # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
+    fig.update_layout(map_bounds={"west": -121, "east": -120.0, "south": 34.0, "north": 35.0})
     fig.update_layout(
-        modebar=dict(
-            orientation="v"
-        ),  # Move modebar to vertical orientation (left side)
+        modebar=dict(orientation="v"),  # Move modebar to vertical orientation (left side)
     )
     fig.layout.uirevision = True
     # print(fig)
