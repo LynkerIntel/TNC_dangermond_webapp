@@ -366,13 +366,14 @@ def plot_q_out(data, cat_id):
         uirevision="Don't change",
         plot_bgcolor="white",
         xaxis_title="",
-        legend=dict(
-            orientation="h",  # Make legend horizontal
-            yanchor="top",
-            y=-0.2,  # Move below the plot (adjust if needed)
-            xanchor="center",
-            x=0.5,  # Center the legend
-        ),
+        showlegend=False,
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
     )
 
     return fig

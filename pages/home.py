@@ -581,10 +581,10 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             cat_id = click_data["points"][0]["customdata"][0]
             # print(click_data)
 
-            if model_var == "Q_OUT":
+            if model_var == "Streamflow":
                 return figures_main.plot_q_out(data, cat_id)
 
-            if model_var == "ACTUAL_ET":
+            if model_var == "Actual ET":
                 print("returning et plot")
                 return figures_main.plot_actual_et(data, cat_id)
 
