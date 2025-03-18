@@ -174,6 +174,7 @@ def mapbox_lines(
         showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
+        map_bounds={"west": -180, "east": -100, "south": 30, "north": 60},
         # paper_bgcolor="#f4f4f4",
         # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
