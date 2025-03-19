@@ -421,6 +421,31 @@ def plot_actual_et(data, cat_id):
     return fig
 
 
+def plot_precip(data, cat_id):
+    """ """
+    ppt_aorc_series = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat_id}).to_pandas()
+    fig = px.line(ppt_aorc_series)
+    # fig.update_traces(name="Precip", showlegend=True)
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: Precipitation"},
+        title_x=0.5,
+        yaxis_title="Precipitation (inches)",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        showlegend=False,
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
+    )
+    return fig
+
+
 def plot_default(data):
     """Plot default basin streamflow (monthly volume) when no catchment is selected."""
     fig = px.line(data.cfe_q["flow"])
