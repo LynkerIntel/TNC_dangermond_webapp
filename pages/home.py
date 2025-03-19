@@ -237,56 +237,72 @@ layout = html.Div(
                 dbc.Col(
                     html.Div(
                         [
-                            dcc.Loading(
-                                id="loading-spinner-map",
-                                delay_show=100,
-                                type="default",
+                            dbc.Tabs(
+                                id="right-column-tabs",
+                                active_tab="tab-1",
                                 children=[
-                                    dcc.Graph(
-                                        id="choropleth-map",
-                                        style={"height": "40vh"},
-                                        config={
-                                            "displaylogo": False,
-                                            "scrollZoom": True,
-                                        },
+                                    dbc.Tab(
+                                        label="Map View",
+                                        tab_id="tab-1",
+                                        children=[
+                                            dcc.Loading(
+                                                id="loading-spinner-map",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        id="choropleth-map",
+                                                        style={"height": "40vh"},
+                                                        config={
+                                                            "displaylogo": False,
+                                                            "scrollZoom": True,
+                                                        },
+                                                    ),
+                                                ],
+                                            ),
+                                            dcc.Loading(
+                                                id="loading-spinner-wb_ts",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        id="wb_ts_fig",
+                                                        style={"height": "40vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
                                     ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-wb_ts",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        id="wb_ts_fig",
-                                        style={"height": "40vh"},
-                                        config={"displaylogo": False},
-                                    ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-precip-bar",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        # id="bar_fig"
-                                        figure=precip_bar_fig,
-                                        style={"height": "70vh"},
-                                        config={"displaylogo": False},
-                                    ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-summary-fig",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        # id="bar_fig"
-                                        figure=summary_data_fig,
-                                        style={"height": "50vh"},
-                                        config={"displaylogo": False},
+                                    dbc.Tab(
+                                        label="1982 - 2023 Water Balance Summary",
+                                        tab_id="tab-2",
+                                        children=[
+                                            dcc.Loading(
+                                                id="loading-spinner-precip-bar",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        figure=precip_bar_fig,
+                                                        style={"height": "70vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                            dcc.Loading(
+                                                id="loading-spinner-summary-fig",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        figure=summary_data_fig,
+                                                        style={"height": "50vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
                                     ),
                                 ],
                             ),
@@ -326,6 +342,8 @@ layout = html.Div(
                             "overflow-y": "scroll",  # Enables vertical scrolling
                             "height": "116vh",
                             "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
+                            "border-top-left-radius": "10px",  # Rounded top left corner
+                            "border-top-right-radius": "10px",  # Rounded top right corner
                         },
                     ),
                     style={
