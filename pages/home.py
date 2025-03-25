@@ -612,8 +612,8 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             if model_var == "Groundwater Storage":
                 return figures_main.plot_storage(data, cat_id)
 
-            # if model_var == "Recharge":
-            #     return figures_main.plot_recharge(data, cat_id)
+            if model_var == "Potential ET":
+                return figures_main.plot_potential_et(data, cat_id)
 
     return figures_main.plot_default(data)
 

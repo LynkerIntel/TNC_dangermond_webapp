@@ -422,6 +422,48 @@ def plot_actual_et(data, cat_id):
     return fig
 
 
+def plot_potential_et(data, cat_id):
+    """Plot Potential Evapotranspiration (PET) for a selected catchment."""
+    df_aet = data.df_cabcm["pet"]
+    df_sub = df_aet[df_aet["divide_id"] == cat_id]
+
+    fig = px.line(df_sub[["value"]])
+    fig.update_traces(name="CABCM PET", showlegend=True)
+
+    df_ng = (
+        pd.DataFrame(data.ds_ngen["POTENTIAL_ET"].sel({"catchment": cat_id}).to_pandas())
+        * 1000  # UNIT: m/month to mm/month
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_ng.index,
+            y=df_ng.iloc[:, 0],
+            mode="lines",
+            name="CFE PET",
+        )
+    )
+
+    fig.update_layout(
+        yaxis_title="millimeters",
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: PET"},
+        title_x=0.5,
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        legend=dict(
+            orientation="h",  # Make legend horizontal
+            yanchor="top",
+            y=-0.2,  # Move below the plot (adjust if needed)
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
+    )
+
+    return fig
+
+
 def plot_precip(data, cat_id):
     """ """
     ppt_aorc_series = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat_id}).to_pandas()
