@@ -105,6 +105,7 @@ def mapbox_lines(
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
         labels={ds_var: access_dict[display_var][1]},
+        color_continuous_scale=px.colors.sequential.Viridis,
     )
 
     # add catchment outline (single outline currently)
@@ -435,6 +436,7 @@ def plot_precip(data, cat_id):
         plot_bgcolor="white",
         xaxis_title="",
         showlegend=False,
+        # color_continuous_scale=px.colors.sequential.deep,  # Set color ramp to Plasma
         # legend=dict(
         #     orientation="h",  # Make legend horizontal
         #     yanchor="top",
@@ -484,8 +486,33 @@ def plot_default(data):
     return fig
 
 
-def plot_recharge(data, cat_id):
-    """ """
+def plot_storage(data, cat_id):
+    """
+    Plot timeseries of monthly groundwater storage volume
+    for selected catchment.
+    """
+    gw_vol_series = data.ds_ngen["NET_VOL_ACRE_FT"].sel({"catchment": cat_id}).to_pandas()
+    fig = px.line(gw_vol_series)
+    # fig.update_traces(name="Precip", showlegend=True)
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: Change in Storage Volume"},
+        title_x=0.5,
+        yaxis_title="(acre-feet)",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        showlegend=False,
+        # color_continuous_scale=px.colors.sequential.deep,  # Set color ramp to Plasma
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
+    )
+    return fig
 
 
 def annual_mean(data):
