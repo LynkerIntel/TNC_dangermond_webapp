@@ -13,7 +13,6 @@ import dash_bootstrap_components as dbc
 from flask import Flask
 import numpy as np
 
-
 dash.register_page(__name__)
 
 
@@ -24,7 +23,7 @@ layout = html.Div(
                 dcc.Markdown(
                     """
 
-            ## About
+            ### Coming Soon.
 
 
             """
