@@ -237,56 +237,72 @@ layout = html.Div(
                 dbc.Col(
                     html.Div(
                         [
-                            dcc.Loading(
-                                id="loading-spinner-map",
-                                delay_show=100,
-                                type="default",
+                            dbc.Tabs(
+                                id="right-column-tabs",
+                                active_tab="tab-1",
                                 children=[
-                                    dcc.Graph(
-                                        id="choropleth-map",
-                                        style={"height": "40vh"},
-                                        config={
-                                            "displaylogo": False,
-                                            "scrollZoom": True,
-                                        },
+                                    dbc.Tab(
+                                        label="Map View",
+                                        tab_id="tab-1",
+                                        children=[
+                                            dcc.Loading(
+                                                id="loading-spinner-map",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        id="choropleth-map",
+                                                        style={"height": "40vh"},
+                                                        config={
+                                                            "displaylogo": False,
+                                                            "scrollZoom": True,
+                                                        },
+                                                    ),
+                                                ],
+                                            ),
+                                            dcc.Loading(
+                                                id="loading-spinner-wb_ts",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        id="wb_ts_fig",
+                                                        style={"height": "40vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
                                     ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-wb_ts",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        id="wb_ts_fig",
-                                        style={"height": "40vh"},
-                                        config={"displaylogo": False},
-                                    ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-precip-bar",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        # id="bar_fig"
-                                        figure=precip_bar_fig,
-                                        style={"height": "70vh"},
-                                        config={"displaylogo": False},
-                                    ),
-                                ],
-                            ),
-                            dcc.Loading(
-                                id="loading-spinner-summary-fig",
-                                delay_show=100,
-                                type="default",
-                                children=[
-                                    dcc.Graph(
-                                        # id="bar_fig"
-                                        figure=summary_data_fig,
-                                        style={"height": "50vh"},
-                                        config={"displaylogo": False},
+                                    dbc.Tab(
+                                        label="1982 - 2023 Water Balance Summary",
+                                        tab_id="tab-2",
+                                        children=[
+                                            dcc.Loading(
+                                                id="loading-spinner-precip-bar",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        figure=precip_bar_fig,
+                                                        style={"height": "70vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                            dcc.Loading(
+                                                id="loading-spinner-summary-fig",
+                                                delay_show=100,
+                                                type="default",
+                                                children=[
+                                                    dcc.Graph(
+                                                        figure=summary_data_fig,
+                                                        style={"height": "50vh"},
+                                                        config={"displaylogo": False},
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
                                     ),
                                 ],
                             ),
@@ -323,9 +339,11 @@ layout = html.Div(
                             ),
                         ],
                         style={
-                            "overflow-y": "scroll",  # Enables vertical scrolling
-                            "height": "116vh",
+                            # "overflow-y": "scroll",  # Enables vertical scrolling
+                            "height": "auto",
                             "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
+                            "border-top-left-radius": "10px",  # Rounded top left corner
+                            "border-top-right-radius": "10px",  # Rounded top right corner
                         },
                     ),
                     style={
@@ -581,15 +599,21 @@ def water_balance_figure(click_data, model_var, stored_cat_click):
             cat_id = click_data["points"][0]["customdata"][0]
             # print(click_data)
 
-            if model_var == "Q_OUT":
+            if model_var == "Streamflow":
                 return figures_main.plot_q_out(data, cat_id)
 
-            if model_var == "ACTUAL_ET":
+            if model_var == "Actual ET":
                 print("returning et plot")
                 return figures_main.plot_actual_et(data, cat_id)
 
-            # if model_var == "Recharge":
-            #     return figures_main.plot_recharge(data, cat_id)
+            if model_var == "Precipitation":
+                return figures_main.plot_precip(data, cat_id)
+
+            if model_var == "Groundwater Storage":
+                return figures_main.plot_storage(data, cat_id)
+
+            if model_var == "Potential ET":
+                return figures_main.plot_potential_et(data, cat_id)
 
     return figures_main.plot_default(data)
 

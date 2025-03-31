@@ -105,6 +105,7 @@ def mapbox_lines(
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
         labels={ds_var: access_dict[display_var][1]},
+        color_continuous_scale=px.colors.sequential.Viridis,
     )
 
     # add catchment outline (single outline currently)
@@ -147,9 +148,7 @@ def mapbox_lines(
             lat=gdf_wells["lat"],
             lon=gdf_wells["lon"],
             mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermap.Marker(
-                size=6, color="white"  # You can change the marker color
-            ),
+            marker=go.scattermap.Marker(size=6, color="white"),  # You can change the marker color
             hovertext=gdf_wells["name"],  # Text labels for each point
             customdata=gdf_wells["station_id_dendra"],
             # hoverinfo="text",
@@ -159,14 +158,10 @@ def mapbox_lines(
     outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
     outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
     fig.add_trace(
-        go.Scattermap(
-            lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
-        ),
+        go.Scattermap(lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"),
     )
 
-    fig.update_traces(
-        marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth")
-    )
+    fig.update_traces(marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth"))
 
     fig.update_layout(
         # width=100vh,
@@ -174,16 +169,14 @@ def mapbox_lines(
         showlegend=False,
         autosize=True,
         margin=dict(l=0, r=0, t=0, b=0),
-        map_bounds={"west": -180, "east": -100, "south": 30, "north": 60},
         # paper_bgcolor="#f4f4f4",
         # mapbox={"layerorder": "below"},
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
+    fig.update_layout(map_bounds={"west": -121, "east": -120.0, "south": 34.0, "north": 35.0})
     fig.update_layout(
-        modebar=dict(
-            orientation="v"
-        ),  # Move modebar to vertical orientation (left side)
+        modebar=dict(orientation="v"),  # Move modebar to vertical orientation (left side)
     )
     fig.layout.uirevision = True
     # print(fig)
@@ -374,13 +367,14 @@ def plot_q_out(data, cat_id):
         uirevision="Don't change",
         plot_bgcolor="white",
         xaxis_title="",
-        legend=dict(
-            orientation="h",  # Make legend horizontal
-            yanchor="top",
-            y=-0.2,  # Move below the plot (adjust if needed)
-            xanchor="center",
-            x=0.5,  # Center the legend
-        ),
+        showlegend=False,
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
     )
 
     return fig
@@ -428,6 +422,74 @@ def plot_actual_et(data, cat_id):
     return fig
 
 
+def plot_potential_et(data, cat_id):
+    """Plot Potential Evapotranspiration (PET) for a selected catchment."""
+    df_aet = data.df_cabcm["pet"]
+    df_sub = df_aet[df_aet["divide_id"] == cat_id]
+
+    fig = px.line(df_sub[["value"]])
+    fig.update_traces(name="CABCM PET", showlegend=True)
+
+    df_ng = (
+        pd.DataFrame(data.ds_ngen["POTENTIAL_ET"].sel({"catchment": cat_id}).to_pandas())
+        * 1000  # UNIT: m/month to mm/month
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_ng.index,
+            y=df_ng.iloc[:, 0],
+            mode="lines",
+            name="CFE PET",
+        )
+    )
+
+    fig.update_layout(
+        yaxis_title="millimeters",
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: PET"},
+        title_x=0.5,
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        legend=dict(
+            orientation="h",  # Make legend horizontal
+            yanchor="top",
+            y=-0.2,  # Move below the plot (adjust if needed)
+            xanchor="center",
+            x=0.5,  # Center the legend
+        ),
+    )
+
+    return fig
+
+
+def plot_precip(data, cat_id):
+    """ """
+    ppt_aorc_series = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat_id}).to_pandas()
+    fig = px.line(ppt_aorc_series)
+    # fig.update_traces(name="Precip", showlegend=True)
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: Precipitation"},
+        title_x=0.5,
+        yaxis_title="Precipitation (inches)",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        showlegend=False,
+        # color_continuous_scale=px.colors.sequential.deep,  # Set color ramp to Plasma
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
+    )
+    return fig
+
+
 def plot_default(data):
     """Plot default basin streamflow (monthly volume) when no catchment is selected."""
     fig = px.line(data.cfe_q["flow"])
@@ -466,8 +528,33 @@ def plot_default(data):
     return fig
 
 
-def plot_recharge(data, cat_id):
-    """ """
+def plot_storage(data, cat_id):
+    """
+    Plot timeseries of monthly groundwater storage volume
+    for selected catchment.
+    """
+    gw_vol_series = data.ds_ngen["NET_VOL_ACRE_FT"].sel({"catchment": cat_id}).to_pandas()
+    fig = px.line(gw_vol_series)
+    # fig.update_traces(name="Precip", showlegend=True)
+    fig.update_layout(
+        autosize=True,
+        title={"text": f"Catchment - {cat_id}: Change in Storage Volume"},
+        title_x=0.5,
+        yaxis_title="(acre-feet)",
+        uirevision="Don't change",
+        plot_bgcolor="white",
+        xaxis_title="",
+        showlegend=False,
+        # color_continuous_scale=px.colors.sequential.deep,  # Set color ramp to Plasma
+        # legend=dict(
+        #     orientation="h",  # Make legend horizontal
+        #     yanchor="top",
+        #     y=-0.2,  # Move below the plot (adjust if needed)
+        #     xanchor="center",
+        #     x=0.5,  # Center the legend
+        # ),
+    )
+    return fig
 
 
 def annual_mean(data):
