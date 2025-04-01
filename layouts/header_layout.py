@@ -22,7 +22,7 @@ header_layout = html.Div(
                     dbc.Col(
                         dbc.NavItem(
                             dbc.NavLink(
-                                "User Guide",
+                                "About",
                                 href="about",
                                 className="text-light",
                             )
