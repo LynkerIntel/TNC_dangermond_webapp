@@ -310,7 +310,6 @@ layout = html.Div(
                             dbc.Modal(
                                 [
                                     dbc.ModalHeader(dbc.ModalTitle(id="well-name-title")),
-                                    dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalBody(
                                         dcc.Loading(
                                             id="loading-spinner-model",
@@ -324,6 +323,7 @@ layout = html.Div(
                                             ],
                                         )
                                     ),
+                                    dbc.ModalBody(html.P(id="modal-content")),
                                     dbc.ModalFooter(
                                         dbc.Button(
                                             "Close",
@@ -470,117 +470,116 @@ def update_modal_content(click_data):
 
 # Callback to update modal content based on clickData (optional if dynamic)
 @callback(
-    Output("modal-figure", "figure"),
+    [Output("modal-figure", "figure"), Output("modal-content", "children")],
     Input("choropleth-map", "clickData"),
     prevent_initial_call=True,
-    # suppress_callback_exceptions=True,
 )
 def update_modal_figure(click_data):
-    """Update modal fig with comparison of CFE groundwater elevation and observerd well level.
+    """Update modal fig with comparison of CFE groundwater elevation and observed well level,
+    and display any warning messages in the modal."""
+    warnings = []  # List to collect warning messages
 
-    TODO: subset well locations on plot to only those with good data
-    """
     if click_data:
         layer = click_data["points"][0]["curveNumber"]
-        # print(f"{layer=}")
-        # print(click_data)
         if layer == 3:
             print(f"well click: {click_data}")
-            # get stn id from click
             stn_id = click_data["points"][0]["customdata"]
             print(f"{stn_id=}")
-            # user stn id to look up catchment
             cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id]["divide_id"].values[
                 0
             ]
             print(f"{cat=}")
+            default_index = data.ds_ngen.Time.values
 
-            # 1. cumulative CFE change for catchment
-            cfe_elev_series = (
-                data.ds_ngen["NET_GW_CHANGE_FEET"].sel({"catchment": cat}).cumsum().to_pandas()
-            )
-            # 2. terraclim precip for catchment
-            # ppt_series = (
-            #     data.terraclim["ppt"]
-            #     .loc[data.terraclim["ppt"]["divide_id"] == cat]["value"]
-            #     .loc["1982-10-01":]
-            # )
-            # 2. precip forcing for catchment
-            ppt_aorc = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
-
+            # Precip forcing for catchment
             try:
-                # 3. get observation data for catchment
+                ppt_aorc = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
+            except Exception as _:
+                warning = "Precipitation forcing not avilable for catchment."
+                warnings.append(warning)
+                print(warning)
+                ppt_aorc = pd.Series(dtype=float, index=default_index)
+
+            # Cumulative CFE elevation change for catchment
+            try:
+                cfe_elev_series = (
+                    data.ds_ngen["NET_GW_CHANGE_FEET"].sel({"catchment": cat}).cumsum().to_pandas()
+                )
+            except Exception as _:
+                warning = "Simulated water elevation change not available for catchment."
+                warnings.append(warning)
+                print(warning)
+                cfe_elev_series = pd.Series(dtype=float, index=default_index)
+
+            # Observation data for catchment
+            try:
                 well_obs_series = data.well_data[stn_id]
                 first = well_obs_series.first_valid_index()
                 well_obs_series -= well_obs_series[first]
+            except Exception as _:
+                warning = "Observed water level data not found for catchment."
+                warnings.append(warning)
+                print(warning)
+                well_obs_series = pd.Series(dtype=float, index=default_index)
 
-                fig = make_subplots(
-                    rows=2,
-                    cols=1,
-                    shared_xaxes=True,
-                    vertical_spacing=0.02,
-                    # subplot_titles=[
-                    #     "Basin Total Precipitation (TerraClimate)",
-                    #     "Cumulative Change in Ground Water Storage",
-                    # ],
-                )
+            if len(well_obs_series) < 1:
+                well_obs_series = [0]
 
-                fig.add_trace(
-                    go.Scatter(
-                        x=cfe_elev_series.index,
-                        y=cfe_elev_series,
-                        mode="lines",
-                        name="CFE Simulated Groundwater Elevation Change",
-                    ),
-                    row=1,
-                    col=1,
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=well_obs_series.index,
-                        y=well_obs_series,
-                        mode="lines",
-                        name="Observed Groundwater Level Change",
-                    ),
-                    row=1,
-                    col=1,
-                )
-                # precip
-                fig.add_trace(
-                    go.Scatter(
-                        x=ppt_aorc.index,
-                        y=ppt_aorc,
-                        mode="lines",
-                        name="Precipitation Forcing (inches)",
-                    ),
-                    row=2,
-                    col=1,
-                )
+            fig = make_subplots(
+                rows=2,
+                cols=1,
+                shared_xaxes=True,
+                vertical_spacing=0.02,
+            )
 
-                fig.update_layout(
-                    # yaxis=dict(title="Groundwater Elevation Change (meters)"),
-                    legend=dict(
-                        orientation="h",  # Horizontal orientation
-                        yanchor="bottom",  # Aligns legend to bottom
-                        y=-0.2,  # Moves legend below the plot (adjust this value as needed)
-                        xanchor="center",  # Center-aligns legend horizontally
-                        x=0.5,  # Centers the legend
-                    ),
-                    margin=dict(
-                        l=50,  # Left margin (reduce as needed)
-                        r=30,  # Right margin
-                        t=30,  # Top margin
-                        b=30,  # Bottom margin
-                    ),
-                    yaxis=dict(title="Water Level Change (feet)"),
-                    yaxis2=dict(title="Precipitation (inch)"),
-                )
+            fig.add_trace(
+                go.Scatter(
+                    x=cfe_elev_series.index,
+                    y=cfe_elev_series,
+                    mode="lines",
+                    name="CFE Simulated Groundwater Elevation Change",
+                ),
+                row=1,
+                col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=well_obs_series.index,
+                    y=well_obs_series,
+                    mode="lines",
+                    name="Observed Groundwater Level Change",
+                ),
+                row=1,
+                col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=ppt_aorc.index,
+                    y=ppt_aorc,
+                    mode="lines",
+                    name="Precipitation Forcing (inches)",
+                ),
+                row=2,
+                col=1,
+            )
 
-                return fig
-            except:
-                return go.Figure()
+            fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=-0.2,
+                    xanchor="center",
+                    x=0.5,
+                ),
+                margin=dict(l=50, r=30, t=30, b=30),
+                yaxis=dict(title="Water Level Change (feet)"),
+                yaxis2=dict(title="Precipitation (inch)"),
+            )
 
-    return go.Figure()
+            warnings_text = "\n".join(warnings) if warnings else ""
+            return fig, warnings_text
+
+    return go.Figure(), ""
 
 
 @callback(
