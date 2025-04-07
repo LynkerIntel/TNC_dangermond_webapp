@@ -144,7 +144,17 @@ class DataLoader:
         Returns:
             dict: Dictionary of pd.DataFrame for each variable.
         """
-        model_vars = ["aet", "cwd", "pck", "pet", "rch", "run", "str", "tmn", "tmx"]
+        model_vars = [
+            "aet",
+            "cwd",
+            "pck",
+            "pet",
+            "rch",
+            "run",
+            "str",
+            "tmn",
+            "tmx",
+        ]
         all_vars = {}
 
         for var in model_vars:
@@ -253,7 +263,8 @@ class DataLoader:
         cat_paths = list(Path(path).glob("cat-*.csv"))
         catchments = [p.stem for p in cat_paths]
         df_lst = [
-            pd.read_csv(p, index_col=["Time"], parse_dates=["Time"]) for p in cat_paths
+            pd.read_csv(p, index_col=["Time"], parse_dates=["Time"])
+            for p in cat_paths
         ]
 
         return df_lst, catchments
@@ -365,8 +376,8 @@ class DataLoader:
         df.index = pd.to_datetime(df["date"])
         df["divide_id"] = df["divide_id"].astype(int)
         df["weighted_tnc_flow"] = (
-            df["weighted_tnc_flow"] * 0.0283  # UNIT
-        )  # Convert cfs to m³/day
+            df["weighted_tnc_flow"] * 0.0283
+        )  # UNIT  # Convert cfs to m³/day
 
         # Group by 'divide_id' and resample to monthly (resulting in m³ per month)
         resampled_df = (
@@ -469,7 +480,9 @@ class DataLoader:
         # domain_vals = df.groupby("water_year")["value"].mean()
 
         # sum months to get annual data for each water year
-        self.terraclim_ann_precip = cat_mean.groupby("water_year")["value"].sum()
+        self.terraclim_ann_precip = cat_mean.groupby("water_year")[
+            "value"
+        ].sum()
         self.terraclim_ann_precip = self.terraclim_ann_precip.loc["1982":]
 
         # Compute quartiles for precipitation accumulation
@@ -487,7 +500,10 @@ class DataLoader:
 
         # Attach quartiles as a DataFrame with precipitation values for reference
         self.terraclim_ann_precip = pd.DataFrame(
-            {"wy_precip_inch": self.terraclim_ann_precip, "Quartile": ppt_quartile}
+            {
+                "wy_precip_inch": self.terraclim_ann_precip,
+                "Quartile": ppt_quartile,
+            }
         )
 
         self.terraclim_mean_annual_precip = self.terraclim_ann_precip[
@@ -499,7 +515,8 @@ class DataLoader:
         process and aggregate ngen simulation for visualizations
         """
         self.ds_ngen["NET_GW_CHANGE_METER"] = (
-            self.ds_ngen["SOIL_TO_GW_FLUX"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"]
+            self.ds_ngen["SOIL_TO_GW_FLUX"]
+            - self.ds_ngen["DEEP_GW_TO_CHANNEL_FLUX"]
         )
 
         self.ds_ngen["NET_GW_CHANGE_FEET"] = (
@@ -529,9 +546,9 @@ class DataLoader:
 
         # ----- ET WY Categories -----------------------
         # monthly to WY
-        et_wy_vol_m3 = (self.ngen_basinwide_et_loss_m3.groupby("water_year").sum())[
-            "ACTUAL_ET_VOL_M3"
-        ]
+        et_wy_vol_m3 = (
+            self.ngen_basinwide_et_loss_m3.groupby("water_year").sum()
+        )["ACTUAL_ET_VOL_M3"]
 
         self.et_wy_quartile = pd.qcut(
             et_wy_vol_m3,
@@ -612,14 +629,20 @@ class DataLoader:
         )
 
         self.ds_ngen["NET_VOL"] = (
-            self.ds_ngen["SOIL_TO_GW_VOL"] - self.ds_ngen["DEEP_GW_TO_CHANNEL_VOL"]
+            self.ds_ngen["SOIL_TO_GW_VOL"]
+            - self.ds_ngen["DEEP_GW_TO_CHANNEL_VOL"]
         )
 
         # NET_VOL to acre-feet
-        self.ds_ngen["NET_VOL_ACRE_FT"] = self.ds_ngen["NET_VOL"] * FT3_TO_ACRE_FT
+        self.ds_ngen["NET_VOL_ACRE_FT"] = (
+            self.ds_ngen["NET_VOL"] * FT3_TO_ACRE_FT
+        )
 
         self.ngen_basinwide_gw_storage = (
-            self.ds_ngen["NET_VOL_ACRE_FT"].sum(dim="catchment").cumsum().to_pandas()
+            self.ds_ngen["NET_VOL_ACRE_FT"]
+            .sum(dim="catchment")
+            .cumsum()
+            .to_pandas()
         )
 
         # ---------------------------------
@@ -639,8 +662,12 @@ class DataLoader:
             self.ds_ngen["areasqkm"] * 1000000
         )  # UNIT: sq_km to sq_m
 
+        # self.ngen_basinwide_et_loss_m3 = pd.DataFrame(
+        #     self.ds_ngen["ACTUAL_ET_VOL_M3"].sum(dim="catchment").to_pandas()
+        # )
         self.ngen_basinwide_et_loss_m3 = pd.DataFrame(
-            self.ds_ngen["ACTUAL_ET_VOL_M3"].sum(dim="catchment").to_pandas()
+            self.ds_ngen["ACTUAL_ET_VOL_M3"].sum(dim="catchment").to_pandas(),
+            columns=["ACTUAL_ET_VOL_M3"],
         )
 
         self.ngen_basinwide_et_loss_m3["water_year"] = (
