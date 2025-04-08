@@ -3,6 +3,7 @@ import dash
 import dash_bootstrap_components as dbc
 
 LYNKER_LOGO = "./assets/lynker-logo-white.png"
+TNC_LOGO = "./assets/TNCLogoPrimary_RGB_Rev.png"
 
 header_layout = html.Div(
     [
@@ -12,7 +13,9 @@ header_layout = html.Div(
                     # Left-aligned title
                     dbc.Col(
                         html.A(
-                            dbc.NavbarBrand("Dangermond Preserve: NextGen Simulations"),
+                            dbc.NavbarBrand(
+                                "Dangermond Preserve: NextGen Simulations"
+                            ),
                             href="/",
                             style={"textDecoration": "none", "color": "white"},
                         ),
@@ -31,12 +34,25 @@ header_layout = html.Div(
                     ),
                     # Right-aligned logo
                     dbc.Col(
-                        html.Img(
-                            src=LYNKER_LOGO,
-                            height="37px",
+                        html.Div(
+                            [
+                                html.Div(
+                                    html.Img(
+                                        src=TNC_LOGO,
+                                        height="37px",
+                                        className="me-3",
+                                    ),
+                                ),
+                                html.Div(
+                                    html.Img(
+                                        src=LYNKER_LOGO,
+                                        height="37px",
+                                    ),
+                                ),
+                            ],
+                            className="d-flex align-items-center",
                         ),
-                        width="auto",
-                        className="ms-auto",
+                        className="ms-auto d-flex justify-content-end",
                     ),
                 ],
                 align="center",
