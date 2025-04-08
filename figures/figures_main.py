@@ -82,17 +82,20 @@ def mapbox_lines(
     if ds_var == "Streamflow Vol. (af)":
         # if flows, use routed data, not xr.dataset
         colors = cfe_routed_flow_af.loc[year_month]
-        colors = colors.melt(var_name="feature_id", value_name="Streamflow Vol. (af)")
+        colors = colors.melt(
+            var_name="feature_id", value_name="Streamflow Vol. (af)"
+        )
         # display_var = "Streamflow Vol. (af)"  # set to actual col name in gdf
         # display_var = access_dict[display_var][0]
         gdf_color = pd.merge(gdf, colors, on="feature_id", how="outer")
+        color_scale = px.colors.sequential.Viridis_r
 
     else:
         # if any other output vars, just select from xr.dataset
         colors = ds[ds_var].sel(Time=year_month).to_dataframe()
         colors = colors[[ds_var]]
         gdf_color = pd.merge(gdf, colors, on="catchment", how="outer")
-
+        color_scale = px.colors.sequential.Viridis
     fig = px.choropleth_map(
         gdf_color,
         geojson=gdf_color.geometry,
@@ -100,12 +103,15 @@ def mapbox_lines(
         # opacity=1,
         color=access_dict[display_var][0],
         hover_data=["divide_id"],
-        center={"lat": 34.51, "lon": -120.47},  # not sure why this is not automatic
+        center={
+            "lat": 34.51,
+            "lon": -120.47,
+        },  # not sure why this is not automatic
         # mapbox_style="open-street-map",
         zoom=10.3,
         custom_data=["divide_id"],  # Add your fields
         labels={ds_var: access_dict[display_var][1]},
-        color_continuous_scale=px.colors.sequential.Viridis,
+        color_continuous_scale=color_scale,
     )
 
     # add catchment outline (single outline currently)
@@ -148,7 +154,9 @@ def mapbox_lines(
             lat=gdf_wells["lat"],
             lon=gdf_wells["lon"],
             mode="markers+text",  # You can also use 'markers' or 'text' alone
-            marker=go.scattermap.Marker(size=6, color="white"),  # You can change the marker color
+            marker=go.scattermap.Marker(
+                size=6, color="white"
+            ),  # You can change the marker color
             hovertext=gdf_wells["name"],  # Text labels for each point
             customdata=gdf_wells["station_id_dendra"],
             # hoverinfo="text",
@@ -158,10 +166,14 @@ def mapbox_lines(
     outline_lats = list(gdf_outline["geometry"][0].exterior.xy[1])
     outline_lons = list(gdf_outline["geometry"][0].exterior.xy[0])
     fig.add_trace(
-        go.Scattermap(lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"),
+        go.Scattermap(
+            lat=outline_lats, lon=outline_lons, mode="lines", hoverinfo="skip"
+        ),
     )
 
-    fig.update_traces(marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth"))
+    fig.update_traces(
+        marker_line_width=0, marker_opacity=1, selector=dict(type="choropleth")
+    )
 
     fig.update_layout(
         # width=100vh,
@@ -174,9 +186,13 @@ def mapbox_lines(
         # uirevision="Don't change",
         # modebar={"orientation": "v", "bgcolor": "rgba(255,255,255,1)"},
     )
-    fig.update_layout(map_bounds={"west": -121, "east": -120.0, "south": 34.0, "north": 35.0})
     fig.update_layout(
-        modebar=dict(orientation="v"),  # Move modebar to vertical orientation (left side)
+        map_bounds={"west": -121, "east": -120.0, "south": 34.0, "north": 35.0}
+    )
+    fig.update_layout(
+        modebar=dict(
+            orientation="v"
+        ),  # Move modebar to vertical orientation (left side)
     )
     fig.layout.uirevision = True
     # print(fig)
@@ -192,7 +208,9 @@ def mapbox_line_gdf_fmt(gdf, id_col="ID"):
     for feature, name in zip(gdf.geometry, gdf[id_col]):
         if isinstance(feature, shapely.geometry.linestring.LineString):
             linestrings = [feature]
-        elif isinstance(feature, shapely.geometry.multilinestring.MultiLineString):
+        elif isinstance(
+            feature, shapely.geometry.multilinestring.MultiLineString
+        ):
             linestrings = feature.geoms
         else:
             continue
@@ -389,7 +407,9 @@ def plot_actual_et(data, cat_id):
     fig.update_traces(name="CABCM", showlegend=True)
 
     df_ng = (
-        pd.DataFrame(data.ds_ngen["ACTUAL_ET"].sel({"catchment": cat_id}).to_pandas())
+        pd.DataFrame(
+            data.ds_ngen["ACTUAL_ET"].sel({"catchment": cat_id}).to_pandas()
+        )
         * 1000  # UNIT: m/month to mm/month
     )
 
@@ -431,7 +451,9 @@ def plot_potential_et(data, cat_id):
     fig.update_traces(name="CABCM PET", showlegend=True)
 
     df_ng = (
-        pd.DataFrame(data.ds_ngen["POTENTIAL_ET"].sel({"catchment": cat_id}).to_pandas())
+        pd.DataFrame(
+            data.ds_ngen["POTENTIAL_ET"].sel({"catchment": cat_id}).to_pandas()
+        )
         * 1000  # UNIT: m/month to mm/month
     )
 
@@ -466,7 +488,9 @@ def plot_potential_et(data, cat_id):
 
 def plot_precip(data, cat_id):
     """ """
-    ppt_aorc_series = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat_id}).to_pandas()
+    ppt_aorc_series = (
+        data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat_id}).to_pandas()
+    )
     fig = px.line(ppt_aorc_series)
     # fig.update_traces(name="Precip", showlegend=True)
     fig.update_layout(
@@ -478,7 +502,7 @@ def plot_precip(data, cat_id):
         plot_bgcolor="white",
         xaxis_title="",
         showlegend=False,
-        # color_continuous_scale=px.colors.sequential.deep,  # Set color ramp to Plasma
+        color_continuous_scale=px.colors.sequential.Viridis_r,
         # legend=dict(
         #     orientation="h",  # Make legend horizontal
         #     yanchor="top",
@@ -533,7 +557,9 @@ def plot_storage(data, cat_id):
     Plot timeseries of monthly groundwater storage volume
     for selected catchment.
     """
-    gw_vol_series = data.ds_ngen["NET_VOL_ACRE_FT"].sel({"catchment": cat_id}).to_pandas()
+    gw_vol_series = (
+        data.ds_ngen["NET_VOL_ACRE_FT"].sel({"catchment": cat_id}).to_pandas()
+    )
     fig = px.line(gw_vol_series)
     # fig.update_traces(name="Precip", showlegend=True)
     fig.update_layout(
@@ -592,7 +618,9 @@ def annual_mean(data):
     # get basinwide Q from routed flows attribute
     q_out = data.cfe_q.groupby("water_year").sum()
 
-    mean_et = et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714  # Convert to acre-feet
+    mean_et = (
+        et_wy["ACTUAL_ET_VOL_M3"].mean() * 0.000810714
+    )  # Convert to acre-feet
     mean_q_out = q_out["flow"].mean()
 
     # make figure
