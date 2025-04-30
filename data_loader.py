@@ -92,15 +92,11 @@ class DataLoader:
         self.cfe_routed_flow_cfs = self.load_cfe_routed_flow_rate()
 
         self.ds_ngen = self.ngen_dashboard_data(
-            key="webapp_resources/ngen_validation_20241103_monthly.nc"
+            key="webapp_resources/ngen_validation_20250425_monthly.nc"
         )
-        # self.gw_delta = self.monthly_gw_delta(
-        #     prefix="webapp_resources/monthly_gw_delta/"
-        # )
 
         # data processing and aggregation
         self.precip_stats()
-        # self.ngen_stats()
         self.ngen_vol_stats()
         self.ngen_stats()
 
@@ -335,6 +331,22 @@ class DataLoader:
         ds = xr.open_dataset(file_stream, engine="scipy")
         ds = ds.sel(Time=slice("1982-10-01", None))
         ds["wy"] = ds["Time"].to_pandas().index.map(self.water_year)
+
+        ds = ds.rename(
+            {  # match to expected variable names for processing
+                "rain_rate": "RAIN_RATE",
+                "direct_runoff": "DIRECT_RUNOFF",
+                "infiltration_excess": "INFILTRATION_EXCESS",
+                "nash_lateral_runoff": "NASH_LATERAL_RUNOFF",
+                "deep_gw_to_channel_flux": "DEEP_GW_TO_CHANNEL_FLUX",
+                "soil_to_gw_flux": "SOIL_TO_GW_FLUX",
+                "q_out": "Q_OUT",
+                "soil_storage": "SOIL_STORAGE",
+                "PET": "POTENTIAL_ET",
+                "AET": "ACTUAL_ET",
+            }
+        )
+
         return ds
 
     def monthly_gw_delta(self, prefix: str) -> dict[str, pd.DataFrame]:
@@ -605,7 +617,7 @@ class DataLoader:
 
         #  only catchments that exist in the dataset
         catchment_areas = (
-            self.gdf_lines.set_index("divide_id")
+            self.gdf.set_index("divide_id")
             .loc[dataset_catchments, "areasqkm"]
             .dropna()  # Drop any missing values to avoid mismatches
         )
