@@ -42,10 +42,10 @@ class DataLoader:
 
     def __init__(
         self,
-        bucket_name: str,
+        bucket_name: str = None,
         s3_resource: bool = None,
-        data_dir: str = "./data/",
         ngen_output_dir: str = None,
+        local_data_dir: str = None,
     ):
         """Load all datasets necessary to run the webapp.
 
@@ -63,8 +63,13 @@ class DataLoader:
             Path to NGen simulation outputs. Defaults to None.
         """
         self.bucket_name = bucket_name
-        self.data_dir = data_dir
+        # self.data_dir = data_dir
         self.ngen_output_dir = ngen_output_dir
+        self.local_data_dir = local_data_dir
+        if local_data_dir is not None:
+            self.use_local = True
+        else:
+            self.use_local = False
 
         if s3_resource is None:
             self.s3_resource = boto3.resource(
@@ -79,9 +84,10 @@ class DataLoader:
 
         # Load all webapp datasets during initialization
         self.gdf_outline = self.get_outline()
-        self.gdf = self.get_local_hydrofabric(layer="divides")
-        self.gdf_wells = self.get_local_hydrofabric(layer="wells")
-        self.gdf_lines = self.get_local_hydrofabric(layer="flowpaths")
+        self.gdf = self.get_hydrofabric(layer="divides")
+        self.gdf_wells = self.get_hydrofabric(layer="wells")
+        self.gdf_lines = self.get_hydrofabric(layer="flowpaths")
+
         self.df_nf = self.natural_flows()
         self.df_cabcm = self.get_s3_cabcm()
         self.terraclim = self.get_s3_terraclim()
@@ -101,22 +107,50 @@ class DataLoader:
         self.ngen_stats()
 
     def pd_read_s3_parquet(self, key, **args):
-        """S3"""
-        obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
-        return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
+        """S3 or local"""
+        if self.use_local:
+            return pd.read_parquet(
+                os.path.join(self.local_data_dir, key), **args
+            )
+        else:
+            obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
+            return pd.read_parquet(io.BytesIO(obj["Body"].read()), **args)
 
     def pd_read_s3_csv(self, key, **args):
-        """S3"""
-        obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
-        return pd.read_csv(io.BytesIO(obj["Body"].read()), **args)
+        """S3 or local"""
+        if self.use_local:
+            return pd.read_csv(os.path.join(self.local_data_dir, key), **args)
+        else:
+            obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
+            return pd.read_csv(io.BytesIO(obj["Body"].read()), **args)
 
-    def gpd_read_s3_gpk(self, key, driver="GPKG", **args):
-        """S3"""
-        response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
-        data = response["Body"].read()
-        with io.BytesIO(data) as src:
-            gdf = gpd.read_file(src, driver=driver)
-        return gdf
+    def gpd_read_s3_gpk(self, layer, key, driver="GPKG"):
+        """S3 or local"""
+        if self.use_local:
+            return gpd.read_file(
+                os.path.join(self.local_data_dir, key), layer=layer
+            )
+        else:
+            response = self.s3_client.get_object(
+                Bucket=self.bucket_name, Key=key
+            )
+            data = response["Body"].read()
+            with io.BytesIO(data) as src:
+                gdf = gpd.read_file(src, layer=layer)
+            return gdf
+
+    def gpd_read_s3_geojson(self, key):
+        """S3 or local"""
+        if self.use_local:
+            return gpd.read_file(os.path.join(self.local_data_dir, key))
+        else:
+            response = self.s3_client.get_object(
+                Bucket=self.bucket_name, Key=key
+            )
+            data = response["Body"].read()
+            with io.BytesIO(data) as src:
+                gdf = gpd.read_file(src)
+            return gdf
 
     def get_s3_well_level(self) -> pd.DataFrame:
         """
@@ -202,9 +236,9 @@ class DataLoader:
 
         return all_vars
 
-    def get_local_hydrofabric(self, layer: str) -> gpd.GeoDataFrame:
+    def get_hydrofabric(self, layer: str) -> gpd.GeoDataFrame:
         """
-        Read from data directory.
+        read hydrofabric from s3 bucket
 
         Args:
             layer (str): Layer name in the geopackage.
@@ -212,17 +246,18 @@ class DataLoader:
         Returns:
             GeoDataFrame: Geopandas dataframe of the specified layer.
         """
-        filepath = os.path.join(self.data_dir, "jldp_ngen_nhdhr.gpkg")
-        gdf = gpd.read_file(filepath, layer=layer)
+        gdf = self.gpd_read_s3_gpk(
+            key="hydrofabric/jldp_ngen_nhdhr_wells.gpkg", layer=layer
+        )
         gdf = gdf.to_crs("EPSG:4326")
 
         if layer == "divides":
             gdf["feature_id"] = gdf["divide_id"].str[4:].astype(int)
-            gdf["catchment"] = gdf["divide_id"]  # For joining with NGen data
+            gdf["catchment"] = gdf["divide_id"]  # for joining with NGen data
 
         elif layer == "wells":
-            gdf["lon"] = gdf.geometry.x  # Extract longitude
-            gdf["lat"] = gdf.geometry.y  # Extract latitude
+            gdf["lon"] = gdf.geometry.x  # extract longitude
+            gdf["lat"] = gdf.geometry.y  # extract latitude
 
         return gdf
 
@@ -317,23 +352,23 @@ class DataLoader:
 
     def ngen_dashboard_data(self, key: str) -> xr.Dataset:
         """
-        Pulls NetCDF from S3 as an xarray Dataset, formatted for the web app.
-
-        Args:
-            key (str): S3 key for the NetCDF file.
-
-        Returns:
-            Dataset: xarray Dataset.
+        Pulls NetCDF from S3 or local as an xarray Dataset, formatted for the web app.
         """
-        response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
-        file_stream = io.BytesIO(response["Body"].read())
+        if self.use_local:
+            file_path = os.path.join(self.local_data_dir, key)
+            ds = xr.open_dataset(file_path, engine="scipy")
+        else:
+            response = self.s3_client.get_object(
+                Bucket=self.bucket_name, Key=key
+            )
+            file_stream = io.BytesIO(response["Body"].read())
+            ds = xr.open_dataset(file_stream, engine="scipy")
 
-        ds = xr.open_dataset(file_stream, engine="scipy")
         ds = ds.sel(Time=slice("1982-10-01", None))
         ds["wy"] = ds["Time"].to_pandas().index.map(self.water_year)
 
         ds = ds.rename(
-            {  # match to expected variable names for processing
+            {
                 "rain_rate": "RAIN_RATE",
                 "direct_runoff": "DIRECT_RUNOFF",
                 "infiltration_excess": "INFILTRATION_EXCESS",
@@ -456,13 +491,12 @@ class DataLoader:
 
     def get_outline(self) -> gpd.GeoDataFrame:
         """
-        Reads the outline data from the data directory.
+        reads the outline data from the s3 bucket
 
         Returns:
-            GeoDataFrame: Geopandas dataframe with the outline.
+            GeoDataFrame: geopandas dataframe with the outline
         """
-        filepath = os.path.join(self.data_dir, "tnc.geojson")
-        gdf = gpd.read_file(filepath)
+        gdf = self.gpd_read_s3_geojson(key="location_data/tnc.geojson")
         gdf["ID"] = "dangermond preserve"
         return gdf
 
