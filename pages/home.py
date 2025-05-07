@@ -51,6 +51,8 @@ s3 = boto3.resource(
 )
 
 data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
+# data = data_loader.DataLoader(local_data_dir="./data") # local mode
+
 # list of catchments in the ngen output data
 cats = data.ds_ngen["catchment"].to_pandas().to_list()
 
@@ -76,7 +78,9 @@ layout = html.Div(
                                 dbc.Checklist(
                                     options=[
                                         {
-                                            "label": "CFE - Groundwater Calibration",
+                                            "label": (
+                                                "CFE - Groundwater Calibration"
+                                            ),
                                             "value": 1,
                                             # "disabled": "True",
                                         },
@@ -159,23 +163,32 @@ layout = html.Div(
                                             html.Tbody(
                                                 [
                                                     html.Tr(
-                                                        [html.Td("Month"), html.Td("")]
+                                                        [
+                                                            html.Td("Month"),
+                                                            html.Td(""),
+                                                        ]
                                                     ),  # Blank cell for month
                                                     html.Tr(
                                                         [
-                                                            html.Td("Selected Volume (m³)"),
+                                                            html.Td(
+                                                                "Selected Volume (m³)"
+                                                            ),
                                                             html.Td(""),
                                                         ]
                                                     ),  # Blank cell for selected volume
                                                     html.Tr(
                                                         [
-                                                            html.Td("Avg Volume (m³)"),
+                                                            html.Td(
+                                                                "Avg Volume (m³)"
+                                                            ),
                                                             html.Td(""),
                                                         ]
                                                     ),  # Blank cell for average volume
                                                     html.Tr(
                                                         [
-                                                            html.Td("% of Avg"),
+                                                            html.Td(
+                                                                "% of Avg"
+                                                            ),
                                                             html.Td(""),
                                                         ]
                                                     ),  # Blank cell for % of avg
@@ -215,7 +228,9 @@ layout = html.Div(
                                             disabled=True,
                                             id="download-data-button",
                                         ),
-                                        dcc.Download(id="download-dataframe-csv"),
+                                        dcc.Download(
+                                            id="download-dataframe-csv"
+                                        ),
                                     ],
                                     className="d-grid gap-2",
                                     # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
@@ -225,8 +240,12 @@ layout = html.Div(
                             ],
                             style={
                                 "height": "100vh",
-                                "overflow-y": "auto",  # Ensures entire sidebar is scrollable
-                                "padding": "10px",  # Prevents unexpected spacing issues
+                                "overflow-y": (
+                                    "auto"
+                                ),  # Ensures entire sidebar is scrollable
+                                "padding": (
+                                    "10px"
+                                ),  # Prevents unexpected spacing issues
                             },
                         ),
                     ),
@@ -252,9 +271,13 @@ layout = html.Div(
                                                 children=[
                                                     dcc.Graph(
                                                         id="choropleth-map",
-                                                        style={"height": "40vh"},
+                                                        style={
+                                                            "height": "40vh"
+                                                        },
                                                         config={
-                                                            "displaylogo": False,
+                                                            "displaylogo": (
+                                                                False
+                                                            ),
                                                             "scrollZoom": True,
                                                         },
                                                     ),
@@ -267,8 +290,14 @@ layout = html.Div(
                                                 children=[
                                                     dcc.Graph(
                                                         id="wb_ts_fig",
-                                                        style={"height": "40vh"},
-                                                        config={"displaylogo": False},
+                                                        style={
+                                                            "height": "40vh"
+                                                        },
+                                                        config={
+                                                            "displaylogo": (
+                                                                False
+                                                            )
+                                                        },
                                                     ),
                                                 ],
                                             ),
@@ -285,8 +314,14 @@ layout = html.Div(
                                                 children=[
                                                     dcc.Graph(
                                                         figure=precip_bar_fig,
-                                                        style={"height": "70vh"},
-                                                        config={"displaylogo": False},
+                                                        style={
+                                                            "height": "70vh"
+                                                        },
+                                                        config={
+                                                            "displaylogo": (
+                                                                False
+                                                            )
+                                                        },
                                                     ),
                                                 ],
                                             ),
@@ -297,8 +332,14 @@ layout = html.Div(
                                                 children=[
                                                     dcc.Graph(
                                                         figure=summary_data_fig,
-                                                        style={"height": "50vh"},
-                                                        config={"displaylogo": False},
+                                                        style={
+                                                            "height": "50vh"
+                                                        },
+                                                        config={
+                                                            "displaylogo": (
+                                                                False
+                                                            )
+                                                        },
                                                     ),
                                                 ],
                                             ),
@@ -309,7 +350,9 @@ layout = html.Div(
                             # DBC Modal
                             dbc.Modal(
                                 [
-                                    dbc.ModalHeader(dbc.ModalTitle(id="well-name-title")),
+                                    dbc.ModalHeader(
+                                        dbc.ModalTitle(id="well-name-title")
+                                    ),
                                     dbc.ModalBody(
                                         dcc.Loading(
                                             id="loading-spinner-model",
@@ -341,9 +384,15 @@ layout = html.Div(
                         style={
                             # "overflow-y": "scroll",  # Enables vertical scrolling
                             "height": "auto",
-                            "box-shadow": "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)",
-                            "border-top-left-radius": "10px",  # Rounded top left corner
-                            "border-top-right-radius": "10px",  # Rounded top right corner
+                            "box-shadow": (
+                                "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)"
+                            ),
+                            "border-top-left-radius": (
+                                "10px"
+                            ),  # Rounded top left corner
+                            "border-top-right-radius": (
+                                "10px"
+                            ),  # Rounded top right corner
                         },
                     ),
                     style={
@@ -461,9 +510,9 @@ def update_modal_content(click_data):
         if layer == 3:
             well_name = click_data["points"][0]["hovertext"]
             stn_id = click_data["points"][0]["customdata"]
-            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id]["divide_id"].values[
-                0
-            ]
+            cat = data.gdf_wells[
+                data.gdf_wells["station_id_dendra"] == stn_id
+            ]["divide_id"].values[0]
             return f"Groundwater Comparison: {well_name} & catchment '{cat}'"
     return ""
 
@@ -485,15 +534,19 @@ def update_modal_figure(click_data):
             print(f"well click: {click_data}")
             stn_id = click_data["points"][0]["customdata"]
             print(f"{stn_id=}")
-            cat = data.gdf_wells[data.gdf_wells["station_id_dendra"] == stn_id]["divide_id"].values[
-                0
-            ]
+            cat = data.gdf_wells[
+                data.gdf_wells["station_id_dendra"] == stn_id
+            ]["divide_id"].values[0]
             print(f"{cat=}")
             default_index = data.ds_ngen.Time.values
 
             # Precip forcing for catchment
             try:
-                ppt_aorc = data.ds_ngen["RAIN_RATE_INCHES"].sel({"catchment": cat}).to_pandas()
+                ppt_aorc = (
+                    data.ds_ngen["RAIN_RATE_INCHES"]
+                    .sel({"catchment": cat})
+                    .to_pandas()
+                )
             except Exception as _:
                 warning = "Precipitation forcing not avilable for catchment."
                 warnings.append(warning)
@@ -503,7 +556,10 @@ def update_modal_figure(click_data):
             # Cumulative CFE elevation change for catchment
             try:
                 cfe_elev_series = (
-                    data.ds_ngen["NET_GW_CHANGE_FEET"].sel({"catchment": cat}).cumsum().to_pandas()
+                    data.ds_ngen["NET_GW_CHANGE_FEET"]
+                    .sel({"catchment": cat})
+                    .cumsum()
+                    .to_pandas()
                 )
             except Exception as _:
                 warning = "Simulated water elevation change not available for catchment."
@@ -694,11 +750,15 @@ def update_table(selected_date):
 
     # Filter the DataFrame to get data for the selected month across all years
     # selected_month_df = df_q[df_q.index.month == selected_month]
-    selected_month_df = data.tnc_domain_q[data.tnc_domain_q.index.month == selected_month]
+    selected_month_df = data.tnc_domain_q[
+        data.tnc_domain_q.index.month == selected_month
+    ]
 
     # Get the volume for the selected month (for the specific year)
     # selected_month_value = df_q.loc[selected_date, "Simulated Monthly Volume"]
-    selected_month_value = data.tnc_domain_q.loc[selected_date, "monthly_vol_af"]
+    selected_month_value = data.tnc_domain_q.loc[
+        selected_date, "monthly_vol_af"
+    ]
 
     # Calculate the average volume for that month across all years
     # average_value = selected_month_df["Simulated Monthly Volume"].mean()
@@ -720,7 +780,10 @@ def update_table(selected_date):
             html.Tbody(
                 [
                     html.Tr(
-                        [html.Td("Month"), html.Td(selected_date.strftime("%B %Y"))]
+                        [
+                            html.Td("Month"),
+                            html.Td(selected_date.strftime("%B %Y")),
+                        ]
                     ),  # Month Year
                     html.Tr(
                         [
@@ -729,10 +792,16 @@ def update_table(selected_date):
                         ]
                     ),  # Selected month value
                     html.Tr(
-                        [html.Td("Avg Volume (af)"), html.Td(formatted_average_value)]
+                        [
+                            html.Td("Avg Volume (af)"),
+                            html.Td(formatted_average_value),
+                        ]
                     ),  # Average value for month
                     html.Tr(
-                        [html.Td("% of Avg"), html.Td(formatted_percent_of_average)]
+                        [
+                            html.Td("% of Avg"),
+                            html.Td(formatted_percent_of_average),
+                        ]
                     ),  # % of average
                 ]
             )
@@ -767,8 +836,12 @@ def update_summary_text(selected_year):
 
     # Get total precipitation for the selected water year (example dataset key)
     if hasattr(data, "terraclim_ann_precip"):
-        total_precip = data.terraclim_ann_precip["wy_precip_inch"].loc[selected_year]
-        precip_quartile = data.terraclim_ann_precip["Quartile"].loc[selected_year]
+        total_precip = data.terraclim_ann_precip["wy_precip_inch"].loc[
+            selected_year
+        ]
+        precip_quartile = data.terraclim_ann_precip["Quartile"].loc[
+            selected_year
+        ]
     else:
         total_precip = None
         precip_quartile = None
@@ -786,7 +859,9 @@ def update_summary_text(selected_year):
         precip_sign = None
 
     # evapotranspiration
-    et_sign = data.et_wy_quartile.iloc[data.et_wy_quartile.index == selected_year].values[0]
+    et_sign = data.et_wy_quartile.iloc[
+        data.et_wy_quartile.index == selected_year
+    ].values[0]
 
     et_vol_af = (
         data.ngen_basinwide_et_loss_m3[
@@ -798,8 +873,12 @@ def update_summary_text(selected_year):
     baseflow_months = data.jalama_tributaries_monthly_cfs.loc[
         data.jalama_tributaries_monthly_cfs.index.month.isin(range(6, 9))
     ]
-    baseflow_wy = baseflow_months.loc[baseflow_months["water_year"] == selected_year]
-    baseflow_min_cfs = baseflow_wy.iloc[:, :3].min().min()  # subset out "water_year" before min()
+    baseflow_wy = baseflow_months.loc[
+        baseflow_months["water_year"] == selected_year
+    ]
+    baseflow_min_cfs = (
+        baseflow_wy.iloc[:, :3].min().min()
+    )  # subset out "water_year" before min()
     baseflow_max_cfs = baseflow_wy.iloc[:, :3].max().max()  # " "
 
     # groundwater change
