@@ -43,6 +43,9 @@ log = logging.getLogger(__name__)
 dash.register_page(__name__, path="/")
 
 
+BUCKET_NAME = os.environ.get('BUCKET_NAME') or 'tnc-dangermond'
+
+
 # note, boto3 will ignore this if local aws credentials exist
 s3 = boto3.resource(
     "s3",
@@ -50,7 +53,7 @@ s3 = boto3.resource(
     aws_secret_access_key=os.getenv("aws_secret_access_key"),
 )
 
-data = data_loader.DataLoader(s3_resource=s3, bucket_name="tnc-dangermond")
+data = data_loader.DataLoader(s3_resource=s3, bucket_name=BUCKET_NAME)
 # data = data_loader.DataLoader(local_data_dir="./data") # local mode
 
 # list of catchments in the ngen output data
