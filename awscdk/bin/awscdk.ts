@@ -4,4 +4,4 @@ import * as cdk from 'aws-cdk-lib';
 import { DangerMondNextGenStack } from '../lib/stack';
 
 const app = new cdk.App();
-new DangerMondNextGenStack(app, 'DangermondNextGen');
+new DangerMondNextGenStack(app, 'dangermond-nextgen');
