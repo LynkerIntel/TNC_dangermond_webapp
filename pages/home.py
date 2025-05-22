@@ -62,8 +62,12 @@ precip_bar_fig = figures_main.precip_bar_fig(data)
 summary_data_fig = figures_main.annual_mean(data)
 
 
-layout = html.Div(
-    [
+layout = dbc.Container(
+    fluid=True,
+    style={
+        "overscrollBehavior": "none",
+    },
+    children=[
         dbc.Row(
             [
                 dbc.Col(
@@ -246,12 +250,14 @@ layout = html.Div(
                                 "padding": (
                                     "10px"
                                 ),  # Prevents unexpected spacing issues
+                                "overscrollBehavior": "none",
                             },
                         ),
                     ),
-                    # html.Div(id="coords", style={"display": "none"}),
+                    xs=12,
+                    md=4,
                     lg=3,
-                    className="ml-3 mt-0",
+                    className="mt-0",
                 ),
                 dbc.Col(
                     html.Div(
@@ -395,16 +401,13 @@ layout = html.Div(
                             ),  # Rounded top right corner
                         },
                     ),
-                    style={
-                        # "backgroundColor": "#cccccc",
-                        # "border-radius": "5px",
-                        # "overflow-x": "hidden",
-                    },  # dbc.Col style
-                    class_name="mr-3",
+                    xs=12,
+                    md=8,
+                    lg=9,
                 ),
             ],
         )
-    ]
+    ],
 )
 
 
