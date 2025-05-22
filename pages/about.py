@@ -22,7 +22,7 @@ layout = html.Div(
                 html.Div(
                     [
                         # html.H1("Dangermond Preserve Model Ouput Explorer"),
-                        html.Br(),
+                        # html.Br(),
                         html.H2("Overview"),
                         html.P(
                             "This dashboard serves model output, historic water balance, and station data from instrumented "
@@ -33,7 +33,7 @@ layout = html.Div(
                             "and forcing variables. The full data collection is available at _addlink_, which includes detail and descriptions of the "
                             "output variables, model parameters, calibration steps, and example code for reading output files."
                         ),
-                        html.Br(),
+                        # html.Br(),
                         html.P(
                             [
                                 "The source code to run this app is available on github: ",
@@ -50,5 +50,6 @@ layout = html.Div(
                 ),
             ],
         ),
-    ]
+    ],
+    style={"maxWidth": "800px", "margin": "0 auto"},
 )
