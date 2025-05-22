@@ -238,6 +238,7 @@ layout = dbc.Container(
                                     ],
                                     className="d-grid gap-2",
                                     # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                    style={"padding-bottom": "1rem"},
                                 ),
                                 # html.Br(),
                                 dcc.Store(id="selected-date-store"),
