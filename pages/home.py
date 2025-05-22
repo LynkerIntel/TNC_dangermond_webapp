@@ -154,7 +154,7 @@ layout = html.Div(
                                     # className="custom-control custom-switch",
                                     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
                                 ),
-                                html.Br(),
+                                # html.Br(),
                                 html.Div("Full Domain Statistics:"),
                                 html.Div(
                                     id="comparison-table-container",
@@ -235,7 +235,7 @@ layout = html.Div(
                                     className="d-grid gap-2",
                                     # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
                                 ),
-                                html.Br(),
+                                # html.Br(),
                                 dcc.Store(id="selected-date-store"),
                             ],
                             style={
