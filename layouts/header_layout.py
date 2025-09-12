@@ -7,7 +7,6 @@ TNC_LOGO = "./assets/TNCLogoPrimary_RGB_Rev.png"
 
 header_layout = html.Div(
     [
-        dcc.Location(id="url", refresh=False),
         dbc.Navbar(
             dbc.Row(
                 [
@@ -18,7 +17,11 @@ header_layout = html.Div(
                                 "Dangermond Preserve: NextGen Simulations"
                             ),
                             href="/",
-                            style={"textDecoration": "none", "color": "white", "paddingLeft": "20px"},
+                            style={
+                                "textDecoration": "none",
+                                "color": "white",
+                                "paddingLeft": "20px",
+                            },
                         ),
                         width="auto",
                     ),
