@@ -17,7 +17,7 @@ header_layout = html.Div(
                                 "Dangermond Preserve: NextGen Simulations"
                             ),
                             href="/",
-                            style={"textDecoration": "none", "color": "white"},
+                            style={"textDecoration": "none", "color": "white", "paddingLeft": "20px"},
                         ),
                         width="auto",
                     ),

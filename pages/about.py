@@ -10,17 +10,26 @@ clientside_callback(
     function(pathname) {
         // Function to update active TOC link based on scroll position
         function updateActiveTOCLink() {
+            const mainContent = document.querySelector('.main-content');
             const sections = document.querySelectorAll('.section-heading');
             const tocLinks = document.querySelectorAll('.toc-link');
             
+            if (!mainContent || sections.length === 0) return;
+            
             let current = '';
+            const scrollTop = mainContent.scrollTop;
             
             sections.forEach(section => {
-                const sectionTop = section.offsetTop - 100; // Account for header
-                if (window.scrollY >= sectionTop) {
+                const sectionTop = section.offsetTop - 50; // Offset for better UX
+                if (scrollTop >= sectionTop) {
                     current = section.getAttribute('id');
                 }
             });
+            
+            // Default to first section if no section is active
+            if (!current && sections.length > 0) {
+                current = sections[0].getAttribute('id');
+            }
             
             tocLinks.forEach(link => {
                 link.classList.remove('active');
@@ -30,11 +39,39 @@ clientside_callback(
             });
         }
         
-        // Update on page load
-        setTimeout(updateActiveTOCLink, 100);
+        // Function to handle TOC link clicks for smooth scrolling
+        function handleTOCClick() {
+            const tocLinks = document.querySelectorAll('.toc-link');
+            const mainContent = document.querySelector('.main-content');
+            
+            tocLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement && mainContent) {
+                        const offsetTop = targetElement.offsetTop - 20;
+                        mainContent.scrollTo({
+                            top: offsetTop,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        }
         
-        // Update on scroll
-        window.addEventListener('scroll', updateActiveTOCLink);
+        // Update on page load
+        setTimeout(() => {
+            updateActiveTOCLink();
+            handleTOCClick();
+        }, 100);
+        
+        // Update on main content scroll
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.addEventListener('scroll', updateActiveTOCLink);
+        }
         
         return window.dash_clientside.no_update;
     }

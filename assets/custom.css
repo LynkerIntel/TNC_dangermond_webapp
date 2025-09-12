@@ -1,0 +1,179 @@
+/* Wiki-like About Page Styles */
+
+/* Smooth scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* About page container */
+.about-page {
+  padding-top: 20px;
+  padding-bottom: 40px;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+/* Table of Contents Sidebar */
+.toc-sidebar {
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  position: fixed;
+  width: 300px;
+}
+
+.toc-list {
+  margin: 0;
+  padding: 0;
+}
+
+.toc-list li {
+  margin-bottom: 8px;
+}
+
+.toc-link {
+  color: #495057;
+  text-decoration: none;
+  padding: 8px 16px;
+  display: block;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.toc-link:hover {
+  color: #007bff;
+  background-color: #e3f2fd;
+  text-decoration: none;
+  transform: translateX(4px);
+}
+
+.toc-link.active {
+  color: #007bff;
+  background-color: #e3f2fd;
+  font-weight: 600;
+}
+
+/* Main content area */
+.main-content {
+  padding-left: 20px;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  margin-left: 10px;
+  padding-right: 60px;
+  max-width: calc(100vw - 240px);
+  box-sizing: border-box;
+}
+
+/* Content sections */
+.content-section {
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.content-section:last-child {
+  border-bottom: none;
+}
+
+/* Section headings */
+.section-heading {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #007bff;
+  font-weight: 600;
+  position: relative;
+}
+
+.section-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 50px;
+  height: 2px;
+  background-color: #28a745;
+}
+
+/* Paragraphs and text */
+.content-section p {
+  line-height: 1.6;
+  margin-bottom: 16px;
+  color: #495057;
+  text-align: justify;
+}
+
+/* Lists */
+.content-section ul {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.content-section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  color: #495057;
+}
+
+/* Links */
+.content-section a {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.content-section a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 767.98px) {
+  .about-page {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .toc-sidebar {
+    position: relative;
+    height: auto;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .main-content {
+    padding-left: 0;
+    padding-top: 20px;
+    height: auto;
+    overflow: visible;
+    margin-left: 0;
+  }
+  
+  .content-section {
+    margin-bottom: 30px;
+  }
+  
+  .section-heading {
+    font-size: 1.5rem;
+  }
+}
+
+/* Scroll padding to account for fixed header */
+html {
+  scroll-padding-top: 80px;
+}
+
+/* Highlight target section briefly */
+.content-section:target {
+  animation: highlight 0.6s ease-in-out;
+}
+
+@keyframes highlight {
+  0% {
+    background-color: rgba(0, 123, 255, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
