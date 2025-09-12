@@ -9,8 +9,7 @@ import * as cert from "aws-cdk-lib/aws-certificatemanager";
 
 
 const certificateArn = 
-  'arn:aws:acm:us-west-1:719729260530:certificate/' + 
-  'a30ce00b-0761-4786-879f-c03af057512a'
+  'arn:aws:acm:us-west-1:606652435014:certificate/3c54a114-a909-427f-88fd-b7d9a638a911'
 
 
 export class DangerMondNextGenStack extends cdk.Stack {
@@ -55,7 +54,7 @@ export class DangerMondNextGenStack extends cdk.Stack {
         environment: {
           aws_access_key_id: process.env.AWS_ACCESS_KEY_ID || '', 
           aws_secret_access_key: process.env.AWS_SECRET_ACCESS_KEY || '',
-          BUCKET_NAME: 'dangermond-nextgen'
+          BUCKET_NAME: 'dangermond-nextgen-data'
         }
       },
       certificate: certificate, 
@@ -64,7 +63,10 @@ export class DangerMondNextGenStack extends cdk.Stack {
       publicLoadBalancer: true, // Default is true
       protocol: elbv2.ApplicationProtocol.HTTPS,
       healthCheck: {
-        command: ["CMD-SHELL", "curl -f http://localhost:10000/ || exit"]
+        command: ["CMD-SHELL", "curl -f http://localhost:10000/ || exit"],
+        interval: cdk.Duration.minutes(4),
+        startPeriod: cdk.Duration.minutes(4),
+        retries: 10
       }
     });
 
