@@ -32,15 +32,6 @@ layout = html.Div(
                                                         )
                                                     ]
                                                 ),
-                                                # html.Li(
-                                                #     [
-                                                #         html.A(
-                                                #             "Dashboard Purpose",
-                                                #             href="#purpose",
-                                                #             className="toc-link",
-                                                #         )
-                                                #     ]
-                                                # ),
                                                 html.Li(
                                                     [
                                                         html.A(
@@ -53,8 +44,8 @@ layout = html.Div(
                                                 html.Li(
                                                     [
                                                         html.A(
-                                                            "Data Sources",
-                                                            href="#data-sources",
+                                                            "Model Calibration Strategies",
+                                                            href="#calibration",
                                                             className="toc-link",
                                                         )
                                                     ]
@@ -71,7 +62,7 @@ layout = html.Div(
                                                 html.Li(
                                                     [
                                                         html.A(
-                                                            "Source Code",
+                                                            "Source Code & Data",
                                                             href="#source",
                                                             className="toc-link",
                                                         )
@@ -110,7 +101,7 @@ layout = html.Div(
                                                 ),
                                                 html.P(
                                                     [
-                                                        "This dashboard serves model output, water balance, and station data from instrumented ",
+                                                        "This dashboard serves model output, water balance components, and station data from instrumented ",
                                                         "groundwater wells in the Dangermond Preserve. The Dangermond Preserve is a 24,364-acre ",
                                                         "coastal ranch in Santa Barbara County, California, that was purchased by The Nature Conservancy ",
                                                         "to protect critical wildlife corridors and coastal ecosystems.",
@@ -128,7 +119,7 @@ layout = html.Div(
                                                     [
                                                         "Users can explore relationships between precipitation, evapotranspiration, soil moisture, and groundwater levels ",
                                                         "across different monitoring locations within the preserve. The dashboard currently displays a subset of the data available"
-                                                        " from this project, focusing on CFE results from an experimental groundwater calibration effort. The full suite of data products is described below, which includes model output, hydroclimatic variables summarized to the Preserve catchments, and station data collected from various sources.",
+                                                        " from this project, focusing on CFE results from an experimental groundwater calibration effort. The full suite of data products—which includes model output, hydroclimatic variables summarized to the Preserve catchments, and station data collected from various sources—is described in the data repository README. A general overview of the project is provided below.",
                                                     ]
                                                 ),
                                             ],
@@ -210,19 +201,23 @@ layout = html.Div(
                                         html.Div(
                                             [
                                                 html.H2(
-                                                    "Station Data",
+                                                    "Station Data Summary",
                                                     id="station-data",
                                                     className="section-heading",
                                                 ),
                                                 html.P(
                                                     [
-                                                        "To prepare in situ data for model calibration and verification, Lynker developed a suite of QA/QC methods and routines, with specific attention on the high density of pressure transducer data, which was primarily supplied as raw datalogger output. Unprocessed, raw pressure transducer data can contain noise, spikes, sensor drift, or water sampling events which must be postprocessed to develop a clean time series. Legacy groundwater level data are available across most sites for two periods, 2010-2011 and 2021-2022 (Figure 3). Variables of interest were accessed using an updated version of the “UC Berkeley” Python wrapper for Dendra. Lynker created several QA/QC datasets for this periods (link to dataset), focused on groundwater level changes. Figure 3 shows locations and time ranges where groundwater level data is available. Streamflow observations from the basin outlet (USGS gauge 11120600) are available only up to 1980. To provide a basis for model evaluation after 1980, we identified a nearby gauge (USGS gauge 11132500) located approximately 12km from the Jalama Creek gauge in the Salsipuedes Creek basin on the northeast border of the Preserve. Elevational distribution and areas between the two basins were largely similar, and the correlation between the two records was high (r2 = 0.88). Jalama Creek (USGS-11120600) flows from the 1965-1980 period of record shows peak flows around ~28 m3 s-1, or ~1,000 cfs. Around 80% of days had detected flows suggesting a near-perennial stream, but only 40% of days had flows greater than ~0.01 m3 s-1. Low flows are difficult to accurately gage and can be an artifact of the rating curve development or measurement methods. These observations reflect the flashy nature of waterways in coastal California, where the highest flows occur during the winter rainy season, and summer months are markedly dry. Jalama Creek exhibits very low flows for much of the year. In this Mediterranean climate, event-based streamflow generation drives high discharge (e.g., winter atmospheric river events are a significant contributor) while baseflow conditions prevail outside of the winter rainy season. The low elevation and geography of the domain prevents any meaningful snowfall accumulation."
+                                                        "To prepare in situ data for model calibration and verification, Lynker developed a suite of QA/QC methods and routines, with specific attention on the high density of pressure transducer data, which was primarily supplied as raw datalogger output. Unprocessed, raw pressure transducer data can contain noise, spikes, sensor drift, or water sampling events which must be postprocessed to develop a clean time series. Legacy groundwater level data are available across most sites for two periods, 2010-2011 and 2021-2022. "
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        "Users can explore relationships between precipitation, evapotranspiration, soil moisture, and groundwater levels ",
-                                                        "across different monitoring locations within the preserve.",
+                                                        "Jalama Creek (USGS-11120600) flows from the 1965-1980 period of record shows peak flows around ~28 m3 s-1, or ~1,000 cfs. Around 80% of days had detected flows suggesting a near-perennial stream, but only 40% of days had flows greater than ~0.01 m3 s-1. Low flows are difficult to accurately gage and can be an artifact of the rating curve development or measurement methods. These observations reflect the flashy nature of waterways in coastal California, where the highest flows occur during the winter rainy season, and summer months are markedly dry. Jalama Creek exhibits very low flows for much of the year. In this Mediterranean climate, event-based streamflow generation drives high discharge (e.g., winter atmospheric river events are a significant contributor) while baseflow conditions prevail outside of the winter rainy season. The low elevation and geography of the domain prevents any meaningful snowfall accumulation."
+                                                    ]
+                                                ),
+                                                html.P(
+                                                    [
+                                                        "Streamflow observations from the basin outlet (USGS gauge 11120600) are available only up to 1980. To provide a basis for model evaluation after 1980, we identified a nearby gauge (USGS gauge 11132500) located approximately 12km from the Jalama Creek gauge in the Salsipuedes Creek basin on the northeast border of the Preserve. Elevational distribution and areas between the two basins were largely similar, and the correlation between the two records was high (r2 = 0.88), enabling a regression-based flow estimation for Jalama Creek throughout the validation period."
                                                     ]
                                                 ),
                                             ],
@@ -232,78 +227,27 @@ layout = html.Div(
                                         html.Div(
                                             [
                                                 html.H2(
-                                                    "Calibration",
+                                                    "Model Calibration Strategies",
                                                     id="calibration",
                                                     className="section-heading",
                                                 ),
                                                 html.P(
                                                     [
-                                                        "We developed and tested two independent calibration strategies. The first calibration targeted streamflow at the domain outlet on Jalama Creek, using the available USGS observations for the period 1979-10-01 to 1982-09-28. The second calibration strategy aimed to leverage the extensive groundwater data available in the preserve. This experimental strategy used observed well water levels to calibrate parameters controlling the subsurface fluxes. CFE updates were necessary to introduce this new calibration target (available at code reference). Both calibration strategies optimized model parameters for 300 iterations. The groundwater calibration included model updates required to target groundwater for calibration. Both calibration results are described below."
+                                                        "We developed and tested two independent calibration strategies. The first calibration targeted streamflow at the domain outlet on Jalama Creek, using the available USGS observations for the period 1979-10-01 to 1982-09-28. The second calibration strategy aimed to leverage the groundwater data available in the preserve. This experimental strategy used observed well water levels to calibrate parameters controlling the subsurface fluxes. Both calibration strategies optimized model parameters for 300 iterations."
+                                                    ]
+                                                ),
+                                                # html.H4(
+                                                #     "Groundwater Calibration Focus",
+                                                #     className="mt-4 mb-3",
+                                                # ),
+                                                html.P(
+                                                    [
+                                                        "The second experimental calibration strategy focuses on groundwater in the preserve. Of the available groundwater data, Catchment-53, in the Northwestern hills of the preserve had the longest continuous record with several simultaneous water level data records in 2010-2011. Catchment-53, known as La Tinta basin, drains into Gasper Creek. The catchment sits between 1,000 and 1,700 feet MSL with an area of 2.3 km². Five groundwater wells exist in this catchment, although the record does not contain simultaneous data for all locations for all periods. One well (Tinta4) was used as a calibration target for the period between December 2009 and May 2011 where data is available."
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        "The dashboard integrates multiple data sources to provide comprehensive hydrologic insights:"
-                                                    ]
-                                                ),
-                                                html.Ul(
-                                                    [
-                                                        html.Li(
-                                                            "Instrumented groundwater monitoring wells"
-                                                        ),
-                                                        html.Li(
-                                                            "Weather station data (precipitation, temperature, wind)"
-                                                        ),
-                                                        html.Li(
-                                                            "CFE model output (soil moisture, evapotranspiration, runoff)"
-                                                        ),
-                                                        html.Li(
-                                                            "Historic water balance calculations"
-                                                        ),
-                                                    ]
-                                                ),
-                                                html.P(
-                                                    [
-                                                        "All data is aggregated to monthly timesteps for visualization purposes, though higher resolution ",
-                                                        "data is available in the complete dataset.",
-                                                    ]
-                                                ),
-                                            ],
-                                            className="content-section",
-                                        ),
-                                        # Data Sources Section
-                                        html.Div(
-                                            [
-                                                html.H2(
-                                                    "Data Sources",
-                                                    id="data-sources",
-                                                    className="section-heading",
-                                                ),
-                                                html.P(
-                                                    [
-                                                        "The dashboard integrates multiple data sources to provide comprehensive hydrologic insights:"
-                                                    ]
-                                                ),
-                                                html.Ul(
-                                                    [
-                                                        html.Li(
-                                                            "Instrumented groundwater monitoring wells"
-                                                        ),
-                                                        html.Li(
-                                                            "Weather station data (precipitation, temperature, wind)"
-                                                        ),
-                                                        html.Li(
-                                                            "CFE model output (soil moisture, evapotranspiration, runoff)"
-                                                        ),
-                                                        html.Li(
-                                                            "Historic water balance calculations"
-                                                        ),
-                                                    ]
-                                                ),
-                                                html.P(
-                                                    [
-                                                        "All data is aggregated to monthly timesteps for visualization purposes, though higher resolution ",
-                                                        "data is available in the complete dataset.",
+                                                        "Change in groundwater level is calculated as the difference between two fluxes that CFE uses to simulate subsurface dynamics: soil to groundwater flux and deep groundwater to channel flux. The difference between these conceptual reservoirs is the change in simulated groundwater storage at each timestep."
                                                     ]
                                                 ),
                                             ],
@@ -319,15 +263,14 @@ layout = html.Div(
                                                 ),
                                                 html.P(
                                                     [
-                                                        "The full data collection includes detailed descriptions of output variables, model parameters, ",
-                                                        "calibration steps, and example code for reading output files. Monthly aggregations are calculated ",
-                                                        "from daily model outputs, and summary statistics are provided for each monitoring location.",
-                                                    ]
-                                                ),
-                                                html.P(
-                                                    [
-                                                        "Volume calculations are performed using standardized units and quality control procedures ",
-                                                        "to ensure data reliability and consistency across different measurement periods.",
+                                                        "The ",
+                                                        html.A(
+                                                            "summary memo",
+                                                            href="https://your-link-here",
+                                                            target="_blank",
+                                                            className="text-primary",
+                                                        ),
+                                                        " contains additional details on the NextGen Framework, CFE, calibration strategies, and interpretation of results. ",
                                                     ]
                                                 ),
                                             ],
@@ -337,9 +280,151 @@ layout = html.Div(
                                         html.Div(
                                             [
                                                 html.H2(
-                                                    "Source Code",
+                                                    "Source Code & Data Access",
                                                     id="source",
                                                     className="section-heading",
+                                                ),
+                                                html.H4(
+                                                    "Data & Model Products",
+                                                    className="mt-4 mb-3",
+                                                ),
+                                                html.Ul(
+                                                    [
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Hydrofabric"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Geospatial inputs for hydrologic models (e.g., DEM, slope, aspect, flow direction)"
+                                                                        )
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Station Metadata & Maps"
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Groundwater Data (groundwater/)"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Hourly, daily, and monthly groundwater levels"
+                                                                        ),
+                                                                        # html.Li(
+                                                                        #     "Includes quality-controlled data and hourly differences"
+                                                                        # ),
+                                                                        # html.Li(
+                                                                        #     "Used for calibration and analysis of subsurface hydrology"
+                                                                        # ),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Meteorological Station Data (met_station_data/)"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Time series of weather observations stored in Parquet format"
+                                                                        )
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "NextGen Model Data (ngen_dr/)"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Calibration, validation, and forcing data for CFE"
+                                                                        ),
+                                                                        html.Li(
+                                                                            "Includes model outputs and specialized hydrofabric for simulation"
+                                                                        ),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Hydrofabric Reference Data"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Alternative or refactored versions of hydrofabric for routing or modeling experiments"
+                                                                        )
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "TNC Datastreams (tnc_datastreams/)"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Sensor data mirrored from the Dendra platform"
+                                                                        ),
+                                                                        html.Li(
+                                                                            "Accessed using a custom API wrapper and stored as Parquet files"
+                                                                        ),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                        html.Li(
+                                                            [
+                                                                html.Strong(
+                                                                    "Water Balance Data (water_balance/)"
+                                                                ),
+                                                                html.Ul(
+                                                                    [
+                                                                        html.Li(
+                                                                            "Modeled components from:"
+                                                                        ),
+                                                                        html.Ul(
+                                                                            [
+                                                                                html.Li(
+                                                                                    "CABCM: AET, PET, runoff, recharge, etc."
+                                                                                ),
+                                                                                html.Li(
+                                                                                    "TerraClimate: temperature, PDSI, snow, vapor pressure, etc."
+                                                                                ),
+                                                                                html.Li(
+                                                                                    "TNC: weighted Natural Flow predictions"
+                                                                                ),
+                                                                            ]
+                                                                        ),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        ),
+                                                    ]
+                                                ),
+                                                html.H4(
+                                                    "Source Code",
+                                                    className="mt-4 mb-3",
                                                 ),
                                                 html.P(
                                                     [
