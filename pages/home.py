@@ -392,14 +392,10 @@ layout = dbc.Container(
                             # "overflow-y": "scroll",  # Enables vertical scrolling
                             "height": "auto",
                             "box-shadow": (
-                                "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)"
+                                "-1px -1px 4px 4px rgba(0, 0, 0, 0.1)"
                             ),
-                            "border-top-left-radius": (
-                                "10px"
-                            ),  # Rounded top left corner
-                            "border-top-right-radius": (
-                                "10px"
-                            ),  # Rounded top right corner
+                            "border-radius": "10px",  # Rounded corners on all sides
+                            "overflow": "hidden",  # Ensures child elements respect border radius
                         },
                     ),
                     xs=12,
