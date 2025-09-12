@@ -7,6 +7,7 @@ TNC_LOGO = "./assets/TNCLogoPrimary_RGB_Rev.png"
 
 header_layout = html.Div(
     [
+        dcc.Location(id="url", refresh=False),
         dbc.Navbar(
             dbc.Row(
                 [
@@ -21,14 +22,20 @@ header_layout = html.Div(
                         ),
                         width="auto",
                     ),
-                    # User Guide Link
+                    # Navigation Links
                     dbc.Col(
-                        dbc.NavItem(
-                            dbc.NavLink(
-                                "About",
-                                href="about",
-                                className="text-light",
-                            )
+                        dbc.Nav(
+                            [
+                                dbc.NavLink(
+                                    "About",
+                                    href="/about",
+                                    active="exact",
+                                    external_link=False,
+                                    className="text-light",
+                                ),
+                            ],
+                            pills=False,
+                            className="d-flex",
                         ),
                         width="auto",
                     ),
