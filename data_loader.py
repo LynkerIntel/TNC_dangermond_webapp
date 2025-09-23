@@ -362,7 +362,7 @@ class DataLoader:
                 Bucket=self.bucket_name, Key=key
             )
             file_stream = io.BytesIO(response["Body"].read())
-            ds = xr.open_dataset(file_stream, engine="netcdf4")
+            ds = xr.open_dataset(file_stream, engine="h5netcdf")
 
         ds = ds.sel(Time=slice("1982-10-01", None))
         ds["wy"] = ds["Time"].to_pandas().index.map(self.water_year)
