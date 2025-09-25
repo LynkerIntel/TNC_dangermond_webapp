@@ -35,9 +35,9 @@ class DataLoader:
         gw_delta : dict
             Monthly groundwater delta data.
         cfe_routed_flow_af : pd.DataFrame
-            Routed monthly flows from CFE (groundwater cal.)
-        cfe_routed_flow_af : pd.DataFrame
-            Routed monthly flows from CFE (groundwater cal.)
+            Routed monthly flows in af from CFE (groundwater cal.)
+        cfe_routed_flow_cfs : pd.DataFrame
+            Routed monthly flows in cfs from CFE (groundwater cal.)
     """
 
     def __init__(
