@@ -1,7 +1,5 @@
 # base image
-#FROM osgeo/gdal:ubuntu-small-3.6.3
-# Specify amd64 arch for Render deployment
-FROM ghcr.io/osgeo/gdal:ubuntu-small-latest-amd64
+FROM --platform=linux/amd64 ghcr.io/osgeo/gdal:ubuntu-small-latest
 
 # # Install dependencies
 RUN apt-get update && \
