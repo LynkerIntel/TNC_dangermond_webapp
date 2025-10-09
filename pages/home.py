@@ -226,14 +226,14 @@ layout = dbc.Container(
                                 ),
                                 html.Div(
                                     [
-                                        dbc.Button(
-                                            "Download Data",
-                                            color="primary",
-                                            disabled=True,
-                                            id="download-data-button",
-                                        ),
-                                        dcc.Download(
-                                            id="download-dataframe-csv"
+                                        html.A(
+                                            dbc.Button(
+                                                "Download Data",
+                                                color="primary",
+                                                id="download-data-button",
+                                            ),
+                                            href="https://www.lynker-spatial.com/data",
+                                            target="_blank",
                                         ),
                                     ],
                                     className="d-grid gap-2",
