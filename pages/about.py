@@ -104,7 +104,7 @@ layout = html.Div(
                                                         "This dashboard serves model output, water balance components, and station data from instrumented ",
                                                         "groundwater wells in the Dangermond Preserve. The Dangermond Preserve is a 24,364-acre ",
                                                         "coastal ranch in Santa Barbara County, California, that was purchased by The Nature Conservancy ",
-                                                        "to protect critical wildlife corridors and coastal ecosystems.",
+                                                        "to protect critical wildlife  and coastal ecosystems.",
                                                     ]
                                                 ),
                                                 html.P(
@@ -119,7 +119,7 @@ layout = html.Div(
                                                     [
                                                         "Users can explore relationships between precipitation, evapotranspiration, soil moisture, and groundwater levels ",
                                                         "across different monitoring locations within the preserve. The dashboard currently displays a subset of the data available"
-                                                        " from this project, focusing on CFE results from an experimental groundwater calibration effort. The full suite of data products—which includes model output, hydroclimatic variables summarized to the Preserve catchments, and station data collected from various sources—is described in the data repository README. A general overview of the project is provided below.",
+                                                        " from this project, focusing on CFE results from an experimental groundwater calibration effort. The included hydrofabric can be used to run other BMI-capatible models within the NextGen Framework. The full suite of data products—which includes model output, hydroclimatic variables summarized to the Preserve catchments, and station data collected from various sources—is described in the data repository README. A general overview of the project is provided below.",
                                                     ]
                                                 ),
                                             ],
@@ -207,12 +207,12 @@ layout = html.Div(
                                                 ),
                                                 html.P(
                                                     [
-                                                        "To prepare in situ data for model calibration and verification, Lynker developed a suite of QA/QC methods and routines, with specific attention on the high density of pressure transducer data, which was primarily supplied as raw datalogger output. Unprocessed, raw pressure transducer data can contain noise, spikes, sensor drift, or water sampling events which must be postprocessed to develop a clean time series. Legacy groundwater level data are available across most sites for two periods, 2010-2011 and 2021-2022. "
+                                                        "To prepare in situ data for model calibration and verification, Lynker developed a suite of QA/QC methods and routines, with specific attention on the pressure transducer data, which was primarily available as raw datalogger output. Unprocessed, raw pressure transducer data can contain noise, spikes, sensor drift, or water sampling events which must be postprocessed to develop a clean time series. Legacy groundwater level data are available across most sites for two periods, 2010-2011 and 2021-2022. "
                                                     ]
                                                 ),
                                                 html.P(
                                                     [
-                                                        "Jalama Creek (USGS-11120600) flows from the 1965-1980 period of record shows peak flows around ~28 m3 s-1, or ~1,000 cfs. Around 80% of days had detected flows suggesting a near-perennial stream, but only 40% of days had flows greater than ~0.01 m3 s-1. Low flows are difficult to accurately gage and can be an artifact of the rating curve development or measurement methods. These observations reflect the flashy nature of waterways in coastal California, where the highest flows occur during the winter rainy season, and summer months are markedly dry. Jalama Creek exhibits very low flows for much of the year. In this Mediterranean climate, event-based streamflow generation drives high discharge (e.g., winter atmospheric river events are a significant contributor) while baseflow conditions prevail outside of the winter rainy season. The low elevation and geography of the domain prevents any meaningful snowfall accumulation."
+                                                        "Jalama Creek (USGS-11120600) flows from the 1965-1980 period of record shows peak flows around ~28 m3 s-1, or ~1,000 cfs. Around 80% of days had detected flows suggesting a near-perennial stream, but only 40% of days had flows greater than ~0.01 m3 s-1. Low flows are difficult to accurately gage and can be an artifact of the rating curve development or measurement methods. These observations reflect the flashy nature of waterways in coastal California, where the highest flows occur during the winter rainy season, and summer months are markedly dry. Jalama Creek exhibits very low flows for much of the year. In this region, event-based streamflow generation drives high discharge (e.g., winter atmospheric river events are a significant contributor) while baseflow conditions prevail outside of the winter rainy season. The low elevation and geography of the domain prevents any meaningful snowfall accumulation."
                                                     ]
                                                 ),
                                                 html.P(
@@ -233,7 +233,7 @@ layout = html.Div(
                                                 ),
                                                 html.P(
                                                     [
-                                                        "We developed and tested two independent calibration strategies. The first calibration targeted streamflow at the domain outlet on Jalama Creek, using the available USGS observations for the period 1979-10-01 to 1982-09-28. The second calibration strategy aimed to leverage the groundwater data available in the preserve. This experimental strategy used observed well water levels to calibrate parameters controlling the subsurface fluxes. Both calibration strategies optimized model parameters for 300 iterations."
+                                                        "Lynker developed and tested two independent calibration strategies. The first calibration targeted streamflow at the domain outlet on Jalama Creek, using the available USGS observations for the period 1979-10-01 to 1982-09-28. The second calibration strategy aimed to leverage the groundwater data available in the preserve. This experimental strategy used observed well water levels to calibrate parameters controlling the subsurface fluxes. Both calibration strategies optimized model parameters for 300 iterations."
                                                     ]
                                                 ),
                                                 # html.H4(
@@ -270,7 +270,7 @@ layout = html.Div(
                                                             target="_blank",
                                                             className="text-primary",
                                                         ),
-                                                        " contains additional details on the NextGen Framework, CFE, calibration strategies, and interpretation of results. ",
+                                                        " contains additional details on the NextGen Framework, CFE, calibration strategies, and results. ",
                                                     ]
                                                 ),
                                             ],
@@ -284,8 +284,19 @@ layout = html.Div(
                                                     id="source",
                                                     className="section-heading",
                                                 ),
+                                                html.P(
+                                                    [
+                                                        "Project data (summarized below) can be downloaded at: ",
+                                                        html.A(
+                                                            "lynker-spatial.com/data",
+                                                            href="https://www.lynker-spatial.com/data",
+                                                            target="_blank",
+                                                            className="text-primary",
+                                                        ),
+                                                    ]
+                                                ),
                                                 html.H4(
-                                                    "Data & Model Products",
+                                                    "Data & Model Products Summary",
                                                     className="mt-4 mb-3",
                                                 ),
                                                 html.Ul(
@@ -431,12 +442,15 @@ layout = html.Div(
                                                         "The source code for this application is available on GitHub: ",
                                                         html.A(
                                                             "Dangermond Web App Repository",
-                                                            href="https://your-link-here",
+                                                            href="https://github.com/LynkerIntel/TNC_dangermond_webapp",
                                                             target="_blank",
                                                             className="text-primary",
                                                         ),
-                                                        ". The repository contains:",
+                                                        ".",
                                                     ]
+                                                ),
+                                                html.P(
+                                                    "The repository contains:"
                                                 ),
                                                 html.Ul(
                                                     [
