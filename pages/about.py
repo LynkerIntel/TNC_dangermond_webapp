@@ -288,8 +288,8 @@ layout = html.Div(
                                                     [
                                                         "Project data (summarized below) can be downloaded at: ",
                                                         html.A(
-                                                            "lynker-spatial.com/data",
-                                                            href="https://www.lynker-spatial.com/data",
+                                                            "lynker-spatial.com/data/consulting/tnc-dangermond/",
+                                                            href="https://www.lynker-spatial.com/data/consulting/tnc-dangermond/",
                                                             target="_blank",
                                                             className="text-primary",
                                                         ),

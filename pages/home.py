@@ -232,7 +232,7 @@ layout = dbc.Container(
                                                 color="primary",
                                                 id="download-data-button",
                                             ),
-                                            href="https://www.lynker-spatial.com/data",
+                                            href="https://www.lynker-spatial.com/data/consulting/tnc-dangermond/",
                                             target="_blank",
                                         ),
                                     ],
@@ -394,8 +394,12 @@ layout = dbc.Container(
                             "box-shadow": (
                                 "-1px -1px 4px 4px rgba(0, 0, 0, 0.1)"
                             ),
-                            "border-radius": "10px",  # Rounded corners on all sides
-                            "overflow": "hidden",  # Ensures child elements respect border radius
+                            "border-radius": (
+                                "10px"
+                            ),  # Rounded corners on all sides
+                            "overflow": (
+                                "hidden"
+                            ),  # Ensures child elements respect border radius
                         },
                     ),
                     xs=12,
