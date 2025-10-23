@@ -65,8 +65,12 @@ precip_bar_fig = figures_main.precip_bar_fig(data)
 summary_data_fig = figures_main.annual_mean(data)
 
 
-layout = html.Div(
-    [
+layout = dbc.Container(
+    fluid=True,
+    style={
+        "overscrollBehavior": "none",
+    },
+    children=[
         dbc.Row(
             [
                 dbc.Col(
@@ -157,7 +161,7 @@ layout = html.Div(
                                     # className="custom-control custom-switch",
                                     # style={"padding": "1.5rem 1.5rem 1.5rem 1.5rem"},
                                 ),
-                                html.Br(),
+                                # html.Br(),
                                 html.Div("Full Domain Statistics:"),
                                 html.Div(
                                     id="comparison-table-container",
@@ -225,20 +229,21 @@ layout = html.Div(
                                 ),
                                 html.Div(
                                     [
-                                        dbc.Button(
-                                            "Download Data",
-                                            color="primary",
-                                            disabled=True,
-                                            id="download-data-button",
-                                        ),
-                                        dcc.Download(
-                                            id="download-dataframe-csv"
+                                        html.A(
+                                            dbc.Button(
+                                                "Download Data",
+                                                color="primary",
+                                                id="download-data-button",
+                                            ),
+                                            href="https://www.lynker-spatial.com/data/consulting/tnc-dangermond/",
+                                            target="_blank",
                                         ),
                                     ],
                                     className="d-grid gap-2",
                                     # style={"padding": "1.5rem 0 1.5rem 1.5rem 1.5rem"},
+                                    style={"padding-bottom": "1rem"},
                                 ),
-                                html.Br(),
+                                # html.Br(),
                                 dcc.Store(id="selected-date-store"),
                             ],
                             style={
@@ -249,12 +254,14 @@ layout = html.Div(
                                 "padding": (
                                     "10px"
                                 ),  # Prevents unexpected spacing issues
+                                "overscrollBehavior": "none",
                             },
                         ),
                     ),
-                    # html.Div(id="coords", style={"display": "none"}),
+                    xs=12,
+                    md=4,
                     lg=3,
-                    className="ml-3 mt-0",
+                    className="mt-0",
                 ),
                 dbc.Col(
                     html.Div(
@@ -388,26 +395,23 @@ layout = html.Div(
                             # "overflow-y": "scroll",  # Enables vertical scrolling
                             "height": "auto",
                             "box-shadow": (
-                                "-4px -4px 10px 6px rgba(0, 0, 0, 0.1)"
+                                "-1px -1px 4px 4px rgba(0, 0, 0, 0.1)"
                             ),
-                            "border-top-left-radius": (
+                            "border-radius": (
                                 "10px"
-                            ),  # Rounded top left corner
-                            "border-top-right-radius": (
-                                "10px"
-                            ),  # Rounded top right corner
+                            ),  # Rounded corners on all sides
+                            "overflow": (
+                                "hidden"
+                            ),  # Ensures child elements respect border radius
                         },
                     ),
-                    style={
-                        # "backgroundColor": "#cccccc",
-                        # "border-radius": "5px",
-                        # "overflow-x": "hidden",
-                    },  # dbc.Col style
-                    class_name="mr-3",
+                    xs=12,
+                    md=8,
+                    lg=9,
                 ),
             ],
         )
-    ]
+    ],
 )
 
 

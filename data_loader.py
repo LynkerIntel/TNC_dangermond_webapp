@@ -35,9 +35,9 @@ class DataLoader:
         gw_delta : dict
             Monthly groundwater delta data.
         cfe_routed_flow_af : pd.DataFrame
-            Routed monthly flows from CFE (groundwater cal.)
-        cfe_routed_flow_af : pd.DataFrame
-            Routed monthly flows from CFE (groundwater cal.)
+            Routed monthly flows in af from CFE (groundwater cal.)
+        cfe_routed_flow_cfs : pd.DataFrame
+            Routed monthly flows in cfs from CFE (groundwater cal.)
     """
 
     def __init__(
@@ -98,7 +98,7 @@ class DataLoader:
         self.cfe_routed_flow_cfs = self.load_cfe_routed_flow_rate()
 
         self.ds_ngen = self.ngen_dashboard_data(
-            key="webapp_resources/ngen_validation_20250425_monthly.nc"
+            key="webapp_resources/ngen_validation_20250922_monthly.nc"
         )
 
         # data processing and aggregation
@@ -356,13 +356,13 @@ class DataLoader:
         """
         if self.use_local:
             file_path = os.path.join(self.local_data_dir, key)
-            ds = xr.open_dataset(file_path, engine="scipy")
+            ds = xr.open_dataset(file_path, engine="netcdf4")
         else:
             response = self.s3_client.get_object(
                 Bucket=self.bucket_name, Key=key
             )
             file_stream = io.BytesIO(response["Body"].read())
-            ds = xr.open_dataset(file_stream, engine="scipy")
+            ds = xr.open_dataset(file_stream, engine="h5netcdf")
 
         ds = ds.sel(Time=slice("1982-10-01", None))
         ds["wy"] = ds["Time"].to_pandas().index.map(self.water_year)

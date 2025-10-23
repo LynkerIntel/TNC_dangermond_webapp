@@ -43,4 +43,5 @@ dependencies:
   - coveralls
   - conda-forge::nbformat
   - future
+  - openblas
 prefix: /Users/dillonragar/miniconda3/envs/tnc_web_env

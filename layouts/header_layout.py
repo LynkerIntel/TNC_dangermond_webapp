@@ -17,18 +17,28 @@ header_layout = html.Div(
                                 "Dangermond Preserve: NextGen Simulations"
                             ),
                             href="/",
-                            style={"textDecoration": "none", "color": "white"},
+                            style={
+                                "textDecoration": "none",
+                                "color": "white",
+                                "paddingLeft": "20px",
+                            },
                         ),
                         width="auto",
                     ),
-                    # User Guide Link
+                    # Navigation Links
                     dbc.Col(
-                        dbc.NavItem(
-                            dbc.NavLink(
-                                "About",
-                                href="about",
-                                className="text-light",
-                            )
+                        dbc.Nav(
+                            [
+                                dbc.NavLink(
+                                    "About",
+                                    href="/about",
+                                    active="exact",
+                                    external_link=False,
+                                    className="text-light",
+                                ),
+                            ],
+                            pills=False,
+                            className="d-flex",
                         ),
                         width="auto",
                     ),

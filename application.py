@@ -75,7 +75,12 @@ def create_app():
         server=server,
         # suppress_callback_exceptions=True,
         use_pages=True,
-        meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
+        meta_tags=[
+            {
+                "name": "viewport",
+                "content": "width=device-width, initial-scale=1",
+            }
+        ],
         external_stylesheets=[
             dbc.themes.BOOTSTRAP,
             dbc.icons.BOOTSTRAP,
@@ -120,4 +125,4 @@ if __name__ == "__main__":
         serve(application.server, host="0.0.0.0", port=10000)
     else:
         print("app is running with development server")
-        application.run_server(host="0.0.0.0", debug=True, port=10000)
+        application.run(host="0.0.0.0", debug=True, port=10000)

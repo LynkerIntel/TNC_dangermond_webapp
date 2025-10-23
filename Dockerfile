@@ -1,13 +1,11 @@
 # base image
-#FROM osgeo/gdal:ubuntu-small-3.6.3
-# Specify amd64 arch for Render deployment
-FROM ghcr.io/osgeo/gdal:ubuntu-small-latest-amd64
+FROM python:3.10-slim
 
-# # Install dependencies
+# Install GDAL and other dependencies
 RUN apt-get update && \
-    apt-get install -y python3 python3-dev python3-pip python3-venv build-essential \
-    libpq-dev gdal-bin libgdal-dev aptitude && \
-    aptitude install -y libgdal-dev && \
+    apt-get install -y --no-install-recommends \
+    gdal-bin libgdal-dev libpq-dev build-essential && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the working directory to /app
