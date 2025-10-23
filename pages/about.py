@@ -266,7 +266,7 @@ layout = html.Div(
                                                         "The ",
                                                         html.A(
                                                             "summary memo",
-                                                            href="https://your-link-here",
+                                                            href="https://www.lynker-spatial.com/data/consulting/tnc-dangermond/",
                                                             target="_blank",
                                                             className="text-primary",
                                                         ),
