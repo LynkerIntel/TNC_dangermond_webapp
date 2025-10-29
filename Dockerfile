@@ -12,7 +12,6 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Install dependencies
-#RUN pip install -i https://m.devpi.net/jaraco/dev suds-jurko
 COPY requirements.txt /app
 
 
@@ -39,17 +38,15 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 COPY application.py /app
 COPY data_loader.py /app
 # COPY config.py /app
-# COPY .ebextensions /app/.ebextensions
 
-# copy data folder into /app
+
+
 COPY assets /app/assets
-COPY data /app/data
 COPY figures /app/figures
 COPY layouts /app/layouts
 COPY pages /app/pages
 
 # Expose port
-# EXPOSE 8050
 EXPOSE 10000
 
 # Run application
