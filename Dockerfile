@@ -2,9 +2,10 @@
 FROM python:3.10-slim
 
 # Install GDAL and other dependencies
+# Install curl for health check to work
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gdal-bin libgdal-dev libpq-dev build-essential && \
+    gdal-bin libgdal-dev libpq-dev build-essential curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -13,7 +14,6 @@ WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt /app
-
 
 # use venv due to pep 688 enforcing environment use
 ENV VIRTUAL_ENV=/opt/venv
@@ -39,8 +39,7 @@ COPY application.py /app
 COPY data_loader.py /app
 # COPY config.py /app
 
-
-
+COPY .env /app/.env
 COPY assets /app/assets
 COPY figures /app/figures
 COPY layouts /app/layouts
